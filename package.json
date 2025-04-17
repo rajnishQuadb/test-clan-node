@@ -18,6 +18,7 @@
     "express": "^5.1.0",
     "express-session": "^1.18.1",
     "jsonwebtoken": "^9.0.2",
+    "mongodb": "^6.15.0",
     "mongoose": "^8.13.2",
     "morgan": "^1.10.0",
     "node-fetch": "^3.3.2",
@@ -25,7 +26,6 @@
     "passport": "^0.7.0",
     "passport-twitter": "^1.0.4"
   },
-  "devDependencies": {},
   "repository": {
     "type": "git",
     "url": "git@github.com-professional:kaifoundry/clans-node-app.git"
