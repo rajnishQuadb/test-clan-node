@@ -1,3 +1,9 @@
 1.) morgan add in  dev dependencies remove 
 2.) docker for deployments 
 
+// user model changes
+1.) primary key web3 username field name web3 username 
+2.) create function modify and nomenclature  matching with routes and fucntion acc to operations perform by controller 
+3.) error handling pure adn each thing is checkd by the controller each field is taken by body 
+4.) packages which i added morgan , mongoose 
+5.)  make kilt to main not in object form 
