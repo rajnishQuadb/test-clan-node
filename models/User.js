@@ -2,29 +2,26 @@ import mongoose from 'mongoose';
 const { Schema } = mongoose;
 
 const userSchema = new Schema({
-  // Basic user information
-  username: {
+  // Web3 username as primary identifier (from KILT)
+  web3Username: {
     type: String,
-    required: true,
     unique: true,
-    trim: true
+    required: false,
+    trim: true,
+    index: true
   },
-  email: {
-    type: String,
-    required: true,
-    unique: true,
-    trim: true
-  },
-  displayName: {
-    type: String,
-    trim: true
-  },
-  profilePicture: {
-    type: String,
-    default: ''
+  
+  // KILT Protocol fields moved to top level
+  did: String,
+  wallet: String,
+  kiltConnectionDate: Date,
+  isKiltConnected: {
+    type: Boolean,
+    default: false
   },
   
   // Social authentication data as an array of objects to support multiple providers
+  // Now includes all user basic information
   socialHandles: [{
     provider: {
       type: String,
@@ -35,9 +32,10 @@ const userSchema = new Schema({
       type: String,
       required: true
     },
-    displayName: String,
+    username: String,
     email: String,
-    profileUrl: String,
+    displayName: String,
+    profilePicture: String,
     // For Twitter-specific data
     tokens: {
       accessToken: String,
@@ -48,20 +46,13 @@ const userSchema = new Schema({
     connectedAt: {
       type: Date,
       default: Date.now
-    }
-  }],
-  
-  // KILT Protocol data
-  kiltData: {
-    did: String,
-    username: String,
-    connectionDate: Date,
-    wallet: String, // Added wallet address field
-    isConnected: {
+    },
+    // Flag to indicate primary social account
+    isPrimary: {
       type: Boolean,
       default: false
     }
-  },
+  }],
   
   // Campaign and clan participation
   clanMemberships: [{
@@ -90,7 +81,7 @@ const userSchema = new Schema({
       type: Schema.Types.ObjectId,
       ref: 'Campaign'
     },
-    reward: Schema.Types.Mixed, // Using Mixed type to support any reward structure
+    reward: Schema.Types.Mixed,
     dateAwarded: {
       type: Date,
       default: Date.now

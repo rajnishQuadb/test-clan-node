@@ -18,27 +18,27 @@ export const socialAuth = async (req, res) => {
       username, 
       displayName, 
       profilePicture, 
-      provider, // Changed from authType to provider
+      provider,
       socialId,
-      tokens // Changed from twitterAuth to tokens
+      tokens
+      // web3Username removed from here
     } = req.body;
-
-    // Validate required fields
+    
+    // No longer requiring web3Username
     if (!email || !username || !provider || !socialId) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Please provide all required fields' 
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide all required fields'
       });
     }
-
-    // Check if user exists by email
-    let user = await User.findOne({ email });
     
-    // If user doesn't exist, check by socialId in the socialHandles array
+    // Check if user already exists by social identity
+    let user = await User.findOne({ 'socialHandles.socialId': socialId, 'socialHandles.provider': provider });
+    
     if (!user) {
-      user = await User.findOne({ 'socialHandles.socialId': socialId });
+      user = await User.findOne({ 'socialHandles.email': email });
     }
-
+    
     if (user) {
       // User exists - check if this social account is already linked
       const existingSocialHandle = user.socialHandles.find(
@@ -50,11 +50,24 @@ export const socialAuth = async (req, res) => {
         user.socialHandles.push({
           provider,
           socialId,
+          username,
+          email,
           displayName: displayName || username,
-          profileUrl: profilePicture,
+          profilePicture,
           tokens: provider === 'twitter' ? tokens : undefined,
-          connectedAt: new Date()
+          connectedAt: new Date(),
+          isPrimary: user.socialHandles.length === 0
         });
+      } else {
+        // Update the existing social handle with new information
+        existingSocialHandle.username = username;
+        existingSocialHandle.email = email;
+        existingSocialHandle.displayName = displayName || username;
+        existingSocialHandle.profilePicture = profilePicture;
+        
+        if (provider === 'twitter' && tokens) {
+          existingSocialHandle.tokens = tokens;
+        }
       }
       
       // Update last login
@@ -62,39 +75,46 @@ export const socialAuth = async (req, res) => {
       await user.save();
     } else {
       // Create new user with this social handle
+    
+      
       user = await User.create({
-        email,
-        username,
-        displayName: displayName || username,
-        profilePicture,
+        web3Username: "", // Temporary value that will be updated later
         socialHandles: [{
           provider,
           socialId,
+          username,
+          email,
           displayName: displayName || username,
-          profileUrl: profilePicture,
+          profilePicture,
           tokens: provider === 'twitter' ? tokens : undefined,
-          connectedAt: new Date()
+          connectedAt: new Date(),
+          isPrimary: true
         }]
       });
     }
-
+    
     // Generate token
     const token = generateToken(user._id);
-
+    
+    // Get primary social account info
+    const primarySocial = user.socialHandles.find(h => h.isPrimary) || user.socialHandles[0];
+    
     res.status(200).json({
       success: true,
       token,
       user: {
         _id: user._id,
-        username: user.username,
-        email: user.email,
-        displayName: user.displayName,
-        profilePicture: user.profilePicture,
+        web3Username: user.web3Username === "" ? null : user.web3Username,
+        username: primarySocial?.username,
+        email: primarySocial?.email,
+        displayName: primarySocial?.displayName,
+        profilePicture: primarySocial?.profilePicture,
+        hasKiltConnection: user.isKiltConnected,
+        needsWeb3Setup: user.web3Username === "" , // Flag to indicate web3 setup is needed
         socialHandles: user.socialHandles.map(handle => ({
           provider: handle.provider,
           displayName: handle.displayName
-        })),
-        kiltData: user.kiltData
+        }))
       }
     });
   } catch (error) {
@@ -110,31 +130,45 @@ export const getUserProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user.id)
       .select('-__v')
-      .populate('campaigns', 'title description startDate endDate'); // Changed from joinedCampaigns to campaigns
+      .populate('campaigns', 'title description startDate endDate');
     
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
+    
+    // Get primary social account
+    const primarySocial = user.socialHandles.find(h => h.isPrimary) || user.socialHandles[0] || {};
+    
+    // Check if the user has a temporary web3Username
+    const needsWeb3Setup = user.web3Username.startsWith('temp_');
 
     // Format the response to match the profile section requirements
     const profileData = {
       basics: {
         _id: user._id,
-        username: user.username,
-        email: user.email,
-        displayName: user.displayName,
-        profilePicture: user.profilePicture,
-        isActive: user.isActive
+        web3Username: needsWeb3Setup ? null : user.web3Username,
+        username: primarySocial.username,
+        email: primarySocial.email,
+        displayName: primarySocial.displayName,
+        profilePicture: primarySocial.profilePicture,
+        isActive: user.isActive,
+        needsWeb3Setup: needsWeb3Setup
       },
-      kiltConnection: user.kiltData,
+      kiltConnection: {
+        did: user.did,
+        wallet: user.wallet,
+        connectionDate: user.kiltConnectionDate,
+        isConnected: user.isKiltConnected
+      },
       socialHandles: user.socialHandles.map(handle => ({
         provider: handle.provider,
         displayName: handle.displayName,
-        profileUrl: handle.profileUrl,
-        connectedAt: handle.connectedAt
+        profilePicture: handle.profilePicture,
+        connectedAt: handle.connectedAt,
+        isPrimary: handle.isPrimary
       })),
-      joinedCampaigns: user.campaigns, // Changed from joinedCampaigns to campaigns
-      rewards: user.rewards // Changed from earnedRewards to rewards based on your model
+      joinedCampaigns: user.campaigns,
+      rewards: user.rewards
     };
 
     res.status(200).json({
@@ -150,14 +184,18 @@ export const getUserProfile = async (req, res) => {
 // @desc    Update KILT DID information
 // @route   PUT /api/users/kilt-connection
 // @access  Private
+// @desc    Update KILT connection information
+// @route   PUT /api/users/kilt-connection
+// @access  Private
 export const updateKiltConnection = async (req, res) => {
   try {
-    const { did, username, wallet } = req.body;
+    const { web3Username, did, wallet } = req.body;
     
-    if (!did || !username) {
+    // Now requiring web3Username along with did
+    if (!web3Username || !did) {
       return res.status(400).json({ 
         success: false, 
-        message: 'Please provide DID and username' 
+        message: 'Please provide web3Username and DID' 
       });
     }
 
@@ -167,19 +205,39 @@ export const updateKiltConnection = async (req, res) => {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
     
-    user.kiltData = {
-      did,
-      username,
-      wallet: wallet || user.kiltData?.wallet,
-      connectionDate: Date.now(),
-      isConnected: true
-    };
+    // Check if the requested web3Username is already taken by another user
+    if (user.web3Username !== web3Username) {
+      const existingUser = await User.findOne({
+        web3Username,
+        _id: { $ne: user._id }
+      });
+      
+      if (existingUser) {
+        return res.status(400).json({
+          success: false,
+          message: 'This web3Username is already taken'
+        });
+      }
+    }
+    
+    // Update KILT and web3Username fields
+    user.web3Username = web3Username;
+    user.did = did;
+    user.wallet = wallet || user.wallet;
+    user.kiltConnectionDate = new Date();
+    user.isKiltConnected = true;
     
     await user.save();
     
     res.status(200).json({
       success: true,
-      kiltData: user.kiltData
+      kiltConnection: {
+        web3Username: user.web3Username,
+        did: user.did,
+        wallet: user.wallet,
+        kiltConnectionDate: user.kiltConnectionDate,
+        isKiltConnected: user.isKiltConnected
+      }
     });
   } catch (error) {
     console.error(error);
@@ -187,10 +245,12 @@ export const updateKiltConnection = async (req, res) => {
   }
 };
 
-// New controller method to link another social account
+// @desc    Link another social account to existing user
+// @route   POST /api/users/link-social
+// @access  Private
 export const linkSocialAccount = async (req, res) => {
   try {
-    const { provider, socialId, displayName, profileUrl, tokens } = req.body;
+    const { provider, socialId, displayName, email, username, profilePicture, tokens } = req.body;
     
     if (!provider || !socialId) {
       return res.status(400).json({
@@ -235,10 +295,13 @@ export const linkSocialAccount = async (req, res) => {
     user.socialHandles.push({
       provider,
       socialId,
+      username,
+      email,
       displayName,
-      profileUrl,
+      profilePicture,
       tokens: provider === 'twitter' ? tokens : undefined,
-      connectedAt: new Date()
+      connectedAt: new Date(),
+      isPrimary: false
     });
     
     await user.save();
@@ -248,7 +311,65 @@ export const linkSocialAccount = async (req, res) => {
       message: 'Social account linked successfully',
       socialHandles: user.socialHandles.map(handle => ({
         provider: handle.provider,
-        displayName: handle.displayName
+        displayName: handle.displayName,
+        isPrimary: handle.isPrimary
+      }))
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+};
+
+// @desc    Set primary social account
+// @route   PUT /api/users/primary-social
+// @access  Private
+export const setPrimarySocialAccount = async (req, res) => {
+  try {
+    const { provider, socialId } = req.body;
+    
+    if (!provider || !socialId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide provider and socialId'
+      });
+    }
+    
+    const user = await User.findById(req.user.id);
+    
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    
+    // Check if the social account exists
+    const socialIndex = user.socialHandles.findIndex(
+      handle => handle.provider === provider && handle.socialId === socialId
+    );
+    
+    if (socialIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        message: 'Social account not found'
+      });
+    }
+    
+    // Reset all isPrimary flags
+    user.socialHandles.forEach(handle => {
+      handle.isPrimary = false;
+    });
+    
+    // Set the new primary social account
+    user.socialHandles[socialIndex].isPrimary = true;
+    
+    await user.save();
+    
+    res.status(200).json({
+      success: true,
+      message: 'Primary social account updated',
+      socialHandles: user.socialHandles.map(handle => ({
+        provider: handle.provider,
+        displayName: handle.displayName,
+        isPrimary: handle.isPrimary
       }))
     });
   } catch (error) {
