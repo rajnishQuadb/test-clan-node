@@ -1,7 +1,36 @@
 {
   "compilerOptions": {
-    "typeRoots": ["./types", "./node_modules/@types"],
-    "moduleResolution": "node",
-    "esModuleInterop": true
-  }
+    /* Language and Environment */
+    "target": "es2020",                          /* Use a modern JavaScript target */
+    
+    /* Modules */
+    "module": "NodeNext",                        /* For latest Node.js ES modules support */
+    "moduleResolution": "NodeNext",              /* Matching module resolution */
+    
+    /* Output Configuration */
+    "outDir": "./dist",                          /* Output directory for compiled files */
+    "sourceMap": true,                           /* Generate source maps for debugging */
+    
+    /* Type Checking */
+    "strict": true,                              /* Enable all strict type checking options */
+    
+    /* Interop */
+    "esModuleInterop": true,                     /* Better interop between different module formats */
+    "forceConsistentCasingInFileNames": true,    /* Case sensitivity for imports */
+    
+    /* Experimental Features (needed for decorators) */
+    "experimentalDecorators": true,              /* For Sequelize decorators */
+    "emitDecoratorMetadata": true,               /* For Sequelize metadata */
+    
+    /* Other */
+    "resolveJsonModule": true,                   /* Allow importing JSON files */
+    "skipLibCheck": true                         /* Skip checking declaration files */
+  },
+  "include": [
+    "**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
 }
