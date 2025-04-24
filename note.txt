@@ -7,3 +7,15 @@
 3.) error handling pure adn each thing is checkd by the controller each field is taken by body 
 4.) packages which i added morgan , mongoose 
 5.)  make kilt to main not in object form 
+6.) no need of updsate kilt route sinugle route social working only for all data 
+7.) crypto js library used for encrypt the data and send the data to frontend to decrypt the data to show to user means not go in json format 
+8.) ensure proper error handling for encryption and decryption processes 
+9.) no need of campaign 
+10.) get Allcampaigns route ]
+
+
+11.) no need of clan to add in campaign clan is different 
+12.) when campaign create leaderboard automatically create 
+13.) campaign create then leaderboard create and id comes we store if with campaign ok 
+14.) pass the userId in join campaign  
+15.) docker intialize and nodejs version add in packages , swagger ui , zohrd validation and catch defined in one type from structs  comes in one form consts like 500 , 200 , and more , define erros diffrerntly like internal  make data and repo and controller ok like rep send the datta to contrioller and move jwt to auth.js and move dev dep[endices ok ] , typoes ki file differnt folder , caching and rate limiting

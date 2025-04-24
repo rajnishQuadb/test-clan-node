@@ -1,32 +1,53 @@
 {
-  "name": "clans-server",
+  "name": "clans-node-app-typescript",
   "version": "1.0.0",
   "main": "index.js",
-  "type": "module",
   "scripts": {
-    "start": "nodemon index.js"
+    "start": "node dist/server.js",
+    "dev": "nodemon --exec ts-node server.ts",
+    "build": "tsc",
+    "watch": "tsc -w",
+    "lint": "eslint --ext .ts ."
+  },
+  "engines": {
+    "node": ">=23.0.0"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/crypto-js": "^4.2.2",
+    "@types/express": "^5.0.1",
+    "@types/express-session": "^1.18.1",
+    "@types/jsonwebtoken": "^9.0.9",
+    "@types/mongoose": "^5.11.96",
+    "@types/node": "^22.14.1",
+    "@types/passport": "^1.0.17",
+    "@types/passport-twitter": "^1.0.40",
+    "@types/pg": "^8.11.13",
+    "@types/sequelize": "^4.28.20",
+    "nodemon": "^3.1.9",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
+  },
   "dependencies": {
-    "axios": "^1.8.4",
     "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
+    "crypto-js": "^4.2.0",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "express-session": "^1.18.1",
+    "google-auth-library": "^9.15.1",
     "jsonwebtoken": "^9.0.2",
-    "mongodb": "^6.15.0",
+    "jwks-rsa": "^3.2.0",
     "mongoose": "^8.13.2",
-    "node-fetch": "^3.3.2",
-    "nodemon": "^3.1.9",
     "passport": "^0.7.0",
-    "passport-twitter": "^1.0.4"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git@github.com-professional:kaifoundry/clans-node-app.git"
+    "passport-twitter": "^1.0.4",
+    "pg": "^8.14.1",
+    "pg-hstore": "^2.3.4",
+    "sequelize": "^6.37.7",
+    "uuid": "^11.1.0"
   }
 }
