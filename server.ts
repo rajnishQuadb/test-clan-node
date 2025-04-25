@@ -44,9 +44,6 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Register Twitter auth routes
-app.use('/api/auth', twitterAuthRoutes);
-
 // Serve static HTML pages
 app.get('/privacyPolicy', (req, res) => {
   res.sendFile(path.join(__dirname, 'htmlPages/privacyPolicy.html'));
@@ -60,6 +57,9 @@ app.get('/termsOfService', (req, res) => {
 app.get('/', (req: Request, res: Response) => {
   res.send('CLANS-NODE-APP-TYPESCRIPT API is running');
 });
+
+// Register Twitter auth routes
+app.use('/api/auth', twitterAuthRoutes);
 
 // Mount routes
 app.use('/api/users', userRoutes);
