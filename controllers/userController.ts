@@ -10,8 +10,8 @@ export const socialAuth = catchAsync(async (req: Request, res: Response, next: N
   
   const { user, token } = await userService.socialAuth(data);
   
-  // Get primary social if exists with proper type definition
-  const primarySocial = user.socialHandles?.find(h => h.isPrimary) || user.socialHandles?.[0] || {
+  // Get first social handle
+  const primarySocial = user.socialHandles?.[0] || {
     username: undefined,
     email: undefined,
     displayName: undefined,
@@ -29,12 +29,8 @@ export const socialAuth = catchAsync(async (req: Request, res: Response, next: N
       email: primarySocial.email,
       displayName: primarySocial.displayName,
       profilePicture: primarySocial.profilePicture,
-      hasKiltConnection: user.isKiltConnected,
-      kilt: {
-        did: user.did,
-        wallet: user.wallet,
-        connectionDate: user.kiltConnectionDate
-      },
+      did: user.did,
+      wallet: user.wallet,
       socialHandles: user.socialHandles?.map(handle => ({
         provider: handle.provider,
         displayName: handle.displayName
@@ -58,5 +54,3 @@ export const socialAuth = catchAsync(async (req: Request, res: Response, next: N
   
   res.status(HTTP_STATUS.OK).json(responseData);
 });
-
-// Additional controller methods will go here

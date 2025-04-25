@@ -58,7 +58,10 @@ app.get('/termsOfService', (req, res) => {
 
 // Root route
 app.get('/', (req: Request, res: Response) => {
-  res.send('CLANS-NODE-APP-TYPESCRIPT API is running');
+  res.send('CLANS-NODE-APP is running');
+});
+app.get('/api', (req: Request, res: Response) => {
+  res.send('CLANS-NODE-APP API is running');
 });
 
 // Mount routes

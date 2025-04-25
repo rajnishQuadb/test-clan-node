@@ -22,7 +22,7 @@ class UserService {
       let existingUserWithSocial: UserDTO | null = null;
       if (provider && socialId) {
         existingUserWithSocial = await userRepository.findBySocialIdentity(provider, socialId);
-        }
+      }
        
       // If social account exists with different web3Username, conflict
       if (existingUserWithSocial && existingUserWithSocial.web3Username !== web3Username) {
@@ -35,20 +35,46 @@ class UserService {
       let user: UserDTO;
       
       if (existingUserWithWeb3) {
-        // TODO: Update existing user - for now, just return it
-        user = existingUserWithWeb3;
+        // Update existing user's login time
+        await userRepository.updateLastLogin(existingUserWithWeb3.id as string);
+        
+        // If this is a new social identity, add it
+        if (provider && socialId && !existingUserWithSocial) {
+          const socialHandle: SocialHandleDTO = {
+            provider,
+            socialId,
+            username,
+            email,
+            displayName: displayName || username,
+            profilePicture,
+            tokens,
+            connectedAt: new Date()
+          };
+          
+          await userRepository.addSocialHandle(existingUserWithWeb3.id as string, socialHandle);
+          // Refresh user data
+          const updatedUser = await userRepository.findByWeb3Username(web3Username);
+          user = updatedUser as UserDTO;
+        } else {
+          user = existingUserWithWeb3;
+        }
       } else {
         // Create new user
         const newUser: UserDTO = {
           web3Username,
           did,
           wallet,
-          kiltConnectionDate: did || wallet ? new Date() : undefined,
-          isKiltConnected: Boolean(did || wallet),
-          socialHandles: [],
+          isEarlyUser: false,
           isActive: true,
+          socialHandles: [],
           lastLogin: new Date()
         };
+        
+        // Add twitter tokens if this is twitter auth
+        if (provider === 'twitter' && tokens) {
+          newUser.twitterAccessToken = tokens.accessToken;
+          newUser.twitterRefreshToken = tokens.refreshToken;
+        }
         
         // Add social handle if provided
         if (provider && socialId) {
@@ -59,9 +85,8 @@ class UserService {
             email,
             displayName: displayName || username,
             profilePicture,
-           // tokens,
-            connectedAt: new Date(),
-            isPrimary: true
+            tokens,
+            connectedAt: new Date()
           };
           
           newUser.socialHandles = [socialHandle];

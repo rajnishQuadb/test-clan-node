@@ -1,7 +1,14 @@
 import { Model, DataTypes, Optional } from 'sequelize';
 import sequelize from '../config/db';
 
-// Define social handle type for the JSONB array
+// Define reward history type for JSONB array
+export type RewardHistoryType = {
+  campaignId: string;
+  reward: any; // Using 'any' for flexibility, could be more specific
+  rewardDate: Date;
+};
+
+// Define social handle type for JSONB array
 export type SocialHandleType = {
   provider: 'google' | 'discord' | 'twitter' | 'apple';
   socialId: string;
@@ -9,24 +16,27 @@ export type SocialHandleType = {
   email?: string;
   displayName?: string;
   profilePicture?: string;
-//  tokens?: object;
   connectedAt: Date;
-  isPrimary: boolean;
 };
 
 // Define types for User
 interface UserAttributes {
-  id: string;
-  web3Username: string;
-  did?: string;
-  wallet?: string;
-  kiltConnectionDate?: Date;
-  isKiltConnected: boolean;
-  socialHandles?: SocialHandleType[];
-  isActive: boolean;
-  lastLogin: Date;
-  createdAt?: Date;
-  updatedAt?: Date;
+  id: string;                      // UUID Primary Key
+  web3Username: string;            // Unique, required
+  did?: string;                    // Unique
+  wallet?: string;                 // Unique
+  twitterAccessToken?: string;     // Encrypted, optional
+  twitterRefreshToken?: string;    // Encrypted, optional
+  isEarlyUser: boolean;            // Boolean flag
+  isActive: boolean;               // Boolean flag, renamed from isActiveUser
+  activeClanId?: string;           // FK to Clan
+  clanJoinDate?: Date;             // When user joined a clan
+  joinedCampaigns?: string[];      // Array of campaign UUIDs
+  rewardHistory?: RewardHistoryType[]; // Array of rewards
+  socialHandles?: SocialHandleType[];  // Array of social accounts
+  lastLogin: Date;                 // Timestamp
+  createdAt?: Date;                // Auto by Sequelize
+  updatedAt?: Date;                // Auto by Sequelize
 }
 
 interface UserCreationAttributes extends Optional<UserAttributes, 'id'> {}
@@ -37,10 +47,15 @@ export class User extends Model<UserAttributes, UserCreationAttributes>
   public web3Username!: string;
   public did?: string;
   public wallet?: string;
-  public kiltConnectionDate?: Date;
-  public isKiltConnected!: boolean;
-  public socialHandles?: SocialHandleType[];
+  public twitterAccessToken?: string;
+  public twitterRefreshToken?: string;
+  public isEarlyUser!: boolean;
   public isActive!: boolean;
+  public activeClanId?: string;
+  public clanJoinDate?: Date;
+  public joinedCampaigns?: string[];
+  public rewardHistory?: RewardHistoryType[];
+  public socialHandles?: SocialHandleType[];
   public lastLogin!: Date;
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
@@ -61,28 +76,53 @@ User.init(
     },
     did: {
       type: DataTypes.STRING,
+      unique: true,
       allowNull: true
     },
     wallet: {
       type: DataTypes.STRING,
+      unique: true,
       allowNull: true
     },
-    kiltConnectionDate: {
-      type: DataTypes.DATE,
+    twitterAccessToken: {
+      type: DataTypes.TEXT,  // Encrypted, so needs more space
       allowNull: true
     },
-    isKiltConnected: {
+    twitterRefreshToken: {
+      type: DataTypes.TEXT,  // Encrypted, so needs more space
+      allowNull: true
+    },
+    isEarlyUser: {
       type: DataTypes.BOOLEAN,
       defaultValue: false
-    },
-    socialHandles: {
-      type: DataTypes.JSONB,
-      allowNull: true,
-      defaultValue: []
     },
     isActive: {
       type: DataTypes.BOOLEAN,
       defaultValue: true
+    },
+    activeClanId: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      // references: {
+      //   model: 'clans',
+      //   key: 'id'
+      // }
+    },
+    clanJoinDate: {
+      type: DataTypes.DATE,
+      allowNull: true
+    },
+    joinedCampaigns: {
+      type: DataTypes.ARRAY(DataTypes.UUID),
+      defaultValue: []
+    },
+    rewardHistory: {
+      type: DataTypes.JSONB,
+      defaultValue: []
+    },
+    socialHandles: {
+      type: DataTypes.JSONB,
+      defaultValue: []
     },
     lastLogin: {
       type: DataTypes.DATE,
@@ -94,10 +134,10 @@ User.init(
     tableName: 'users',
     timestamps: true,
     indexes: [
-      {
-        unique: true,
-        fields: ['web3Username']
-      }
+      { unique: true, fields: ['web3Username'] },
+      { unique: true, fields: ['did'] },
+      { unique: true, fields: ['wallet'] },
+      { fields: ['activeClanId'] }
     ]
   }
 );

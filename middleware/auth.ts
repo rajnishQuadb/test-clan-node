@@ -4,16 +4,12 @@ import { User } from '../models/User';
 import { AppError } from '../utils/error-handler';
 import { HTTP_STATUS } from '../constants/http-status';
 
-// Extend Express Request to include user
-declare global {
-  namespace Express {
-    interface Request {
-      user?: any;
-    }
-  }
+// Instead of using global declaration, create a local interface that extends Request
+interface AuthRequest extends Request {
+  user?: User;
 }
 
-export const protect = async (req: Request, res: Response, next: NextFunction) => {
+export const protect = async (req: AuthRequest, res: Response, next: NextFunction) => {
   let token: string;
   
   // Check if token exists in headers
@@ -50,7 +46,7 @@ export const protect = async (req: Request, res: Response, next: NextFunction) =
 /**
  * Middleware to ensure inactive users cannot access protected resources
  */
-export const active = (req: Request, res: Response, next: NextFunction) => {
+export const active = (req: AuthRequest, res: Response, next: NextFunction) => {
   if (req.user && req.user.isActive) {
     next();
   } else {
