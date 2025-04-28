@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { twitterLogin, twitterCallback, twitterTestAuth } from '../controllers/twitterAuthController';
+import { twitterLogin, twitterCallback, twitterTestAuth, twitterCallbackWeb } from '../controllers/twitterAuthController';
 
 const router = Router();
 
@@ -11,5 +11,7 @@ router.get('/twitter/callback', twitterCallback);
 
 // Test route - only available in development
 router.post('/twitter/test', twitterTestAuth);
+
+router.get('/twitter/WebCallback', twitterCallbackWeb);
 
 export default router;

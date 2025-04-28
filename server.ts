@@ -17,7 +17,7 @@ import passport from 'passport';
 import session from 'express-session';
 import twitterAuthRoutes from './routes/twitterAuthRoutes';
 import path from 'path';
-
+import clanRoutes from './routes/clansRoutes';
 
 // Load env vars
 dotenv.config();
@@ -71,7 +71,8 @@ app.use('/api/user', userRoutes);
 app.use('/api/auth', googleAuthRoutes);
 // Register Apple auth routes
 app.use('/api/auth', appleAuthRoutes);
-
+// Register clans routes
+app.use('/clans', clanRoutes);
 // Not found middleware
 app.use((req: Request, res: Response, next: NextFunction) => {
   next(new AppError(`Cannot find ${req.originalUrl} on this server`, HTTP_STATUS.NOT_FOUND));

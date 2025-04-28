@@ -170,3 +170,25 @@ export const Get_Filtered_Users = catchAsync(async (req: Request, res: Response,
     }
   });
 });
+
+
+// upate user to the early user
+export const Early_User = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+  const { userId } = req.params; 
+
+  const user = await userService.updateUserToEarlyUser(userId);
+
+  res.status(HTTP_STATUS.OK).json({
+    success: true,
+    message: 'User updated to early user successfully',
+    data: {
+      userId: user.userId,
+      web3UserName: user.web3UserName,
+      DiD: user.DiD,
+      isActiveUser: user.isActiveUser,
+      isEarlyUser: user.isEarlyUser,
+      activeClanId: user.activeClanId,
+      updatedAt: user.updatedAt
+    }
+  });
+});
