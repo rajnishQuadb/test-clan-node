@@ -92,7 +92,7 @@ export interface AuthRequest extends Request {
 
 // JWT payload structure
 export interface JwtPayload {
-  userId: string;
+  id: string;  // Change from "userId" to "id" to match your token generation
   iat: number;
   exp: number;
 }

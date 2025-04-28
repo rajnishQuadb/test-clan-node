@@ -66,7 +66,7 @@ app.get('/api', (req: Request, res: Response) => {
 });
 
 // Mount routes
-app.use('/api/users', userRoutes);
+app.use('/api/user', userRoutes);
 // Register Google auth routes
 app.use('/api/auth', googleAuthRoutes);
 // Register Apple auth routes
