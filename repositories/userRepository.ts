@@ -272,6 +272,15 @@ class UserRepository {
       rewardHistory
     };
   }
+
+  async findUserById(userId: string) {
+    return await User.findByPk(userId);
+  }
+
+  // Save the updated user to the database
+  async saveUser(user: any) {
+    return await user.save(); // You can customize this to fit your ORM's syntax
+  }
 }
 
 export default new UserRepository();

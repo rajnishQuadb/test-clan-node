@@ -4,7 +4,8 @@ import {
   Update_User,
   Get_Single_User,
   Get_All_Users,
-  Get_Filtered_Users
+  Get_Filtered_Users,
+  Early_User
 } from '../controllers/userController';
 import { protect } from '../middleware/auth';
 
@@ -20,5 +21,7 @@ router.get('/fetch/filter', protect, Get_Filtered_Users);
 // Then parameter-based routes
 router.get('/fetch/:id', protect, Get_Single_User);
 router.put('/update/:id', protect, Update_User);
+
+router.patch('/:userId/early-user', Early_User);
 
 export default router;

@@ -101,6 +101,23 @@ class UserService {
       throw new AppError('Failed to fetch filtered users', HTTP_STATUS.INTERNAL_SERVER_ERROR);
     }
   }
+
+  async updateUserToEarlyUser(userId: string) {
+
+    const user = await userRepository.findUserById(userId);
+
+    if (!user) {
+      throw new AppError('User not found', 404);
+    }
+
+    // Update user to early user
+    user.isEarlyUser = true;
+
+    // Save the updated user
+    await userRepository.saveUser(user);
+
+    return user;
+  }
 }
 
 export default new UserService();
