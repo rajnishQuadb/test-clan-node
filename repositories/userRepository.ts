@@ -42,8 +42,7 @@ class UserRepository {
 
   async createUser(userData: UserDTO): Promise<UserDTO> {
     try {
-      // Process social handles, explicitly selecting only the fields we want to store
-      // This ensures tokens are not included in the database
+      // Process social handles to match the model
       const processedSocialHandles = userData.socialHandles?.map(handle => ({
         provider: handle.provider,
         socialId: handle.socialId,
@@ -51,9 +50,8 @@ class UserRepository {
         email: handle.email,
         displayName: handle.displayName,
         profilePicture: handle.profilePicture,
-        connectedAt: handle.connectedAt || new Date(),
-        isPrimary: handle.isPrimary || false
-        // tokens are intentionally not included here
+        connectedAt: handle.connectedAt || new Date()
+        // Note: tokens are not stored in the DB model
       })) || [];
   
       // Create user with all data including socialHandles
@@ -61,10 +59,15 @@ class UserRepository {
         web3Username: userData.web3Username,
         did: userData.did,
         wallet: userData.wallet,
-        kiltConnectionDate: userData.kiltConnectionDate,
-        isKiltConnected: userData.isKiltConnected || false,
+        twitterAccessToken: userData.twitterAccessToken,
+        twitterRefreshToken: userData.twitterRefreshToken,
+        isEarlyUser: userData.isEarlyUser || false,
+        isActive: userData.isActive !== undefined ? userData.isActive : true,
+        activeClanId: userData.activeClanId,
+        clanJoinDate: userData.clanJoinDate,
+        joinedCampaigns: userData.joinedCampaigns || [],
+        rewardHistory: userData.rewardHistory || [],
         socialHandles: processedSocialHandles,
-        isActive: userData.isActive || true,
         lastLogin: userData.lastLogin || new Date()
       });
       
@@ -75,17 +78,64 @@ class UserRepository {
     }
   }
 
+  async updateLastLogin(id: string): Promise<void> {
+    try {
+      await User.update(
+        { lastLogin: new Date() },
+        { where: { id } }
+      );
+    } catch (error) {
+      console.error('Error in updateLastLogin:', error);
+      throw error;
+    }
+  }
+
+  async addSocialHandle(userId: string, socialHandle: SocialHandleDTO): Promise<void> {
+    try {
+      const user = await User.findByPk(userId);
+      if (!user) {
+        throw new Error('User not found');
+      }
+      
+      // Process the social handle to match the model
+      const processedHandle: SocialHandleType = {
+        provider: socialHandle.provider,
+        socialId: socialHandle.socialId,
+        username: socialHandle.username,
+        email: socialHandle.email,
+        displayName: socialHandle.displayName,
+        profilePicture: socialHandle.profilePicture,
+        connectedAt: socialHandle.connectedAt || new Date()
+      };
+      
+      // Add new social handle to existing ones
+      const socialHandles = user.socialHandles || [];
+      socialHandles.push(processedHandle);
+      
+      // Update the user
+      await user.update({ socialHandles });
+    } catch (error) {
+      console.error('Error in addSocialHandle:', error);
+      throw error;
+    }
+  }
+
   private mapToDTO(user: User): UserDTO {
     return {
       id: user.id,
       web3Username: user.web3Username,
       did: user.did,
       wallet: user.wallet,
-      kiltConnectionDate: user.kiltConnectionDate,
-      isKiltConnected: user.isKiltConnected,
-      socialHandles: user.socialHandles || [],
+      twitterAccessToken: user.twitterAccessToken,
+      twitterRefreshToken: user.twitterRefreshToken,
+      isEarlyUser: user.isEarlyUser,
       isActive: user.isActive,
-      lastLogin: user.lastLogin,
+      activeClanId: user.activeClanId,
+      clanJoinDate: user.clanJoinDate,
+      joinedCampaigns: user.joinedCampaigns,
+      rewardHistory: user.rewardHistory,
+      socialHandles: user.socialHandles,
+      lastLogin: user.lastLogin
     };
   }
 }
