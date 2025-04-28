@@ -5,7 +5,8 @@ import cors from 'cors';
 // Database and models
 import sequelize from './config/db';
 import './models/User'; // Import to initialize models
-
+// Import at the top of your server.ts or index.ts file
+import './models/associations';
 // Route imports
 import userRoutes from './routes/usersRoutes';
 import googleAuthRoutes from './routes/googleAuthRoutes';

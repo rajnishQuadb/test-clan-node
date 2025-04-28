@@ -1,59 +1,82 @@
 import { Request } from 'express';
 
-// Social Handle Data Transfer Object
-export interface SocialHandleDTO {
-  provider: 'google' | 'discord' | 'twitter' | 'apple';
+// User Social Handle DTO
+export interface UserSocialHandleDTO {
+  id?: string;
+  userId?: string;
+  provider: string;
   socialId: string;
   username?: string;
   email?: string;
   displayName?: string;
   profilePicture?: string;
-  tokens?: {
-    accessToken?: string;
-    refreshToken?: string;
-    expiresAt?: Date;
-  };
-  connectedAt?: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
-// Reward History Data Transfer Object
-export interface RewardHistoryDTO {
-  campaignId: string;
-  reward: any;
-  rewardDate: Date;
+// User Wallet DTO
+export interface UserWalletDTO {
+  walletId?: string;
+  userId?: string;
+  walletAddress: string;
+  chain: string;
+  walletType?: string;
+  isPrimary?: boolean;
+  addedAt?: Date;
+  isActive?: boolean;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
-// Complete User Data Transfer Object
-export interface UserDTO {
+// User Reward History DTO
+export interface UserRewardHistoryDTO {
   id?: string;
-  web3Username: string;
-  did?: string;
-  wallet?: string;
+  userId?: string;
+  campaignId: string;
+  reward: number;
+  rewardDate: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+// Complete User DTO
+export interface UserDTO {
+  userId?: string;
+  web3UserName: string;
+  DiD?: string;
   twitterAccessToken?: string;
   twitterRefreshToken?: string;
   isEarlyUser?: boolean;
-  isActive?: boolean;
+  isActiveUser?: boolean;
   activeClanId?: string;
   clanJoinDate?: Date;
-  joinedCampaigns?: string[];
-  rewardHistory?: RewardHistoryDTO[];
-  socialHandles?: SocialHandleDTO[];
-  lastLogin?: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
+  
+  // Related entities
+  socialHandles?: UserSocialHandleDTO[];
+  wallets?: UserWalletDTO[];
+  rewardHistory?: UserRewardHistoryDTO[];
 }
 
 // For social authentication requests
 export interface SocialAuthRequest {
-  web3Username: string;
-  did?: string;
-  wallet?: string;
+  web3UserName: string;
+  DiD?: string;
+  wallet?: {
+    address: string;
+    chain: string;
+    type?: string;
+    isPrimary?: boolean;
+  };
   email?: string;
   username?: string;
   displayName?: string;
   profilePicture?: string;
-  provider?: 'google' | 'discord' | 'twitter' | 'apple';
+  provider?: string;
   socialId?: string;
   tokens?: {
-    accessToken?: string;  // Changed from string to string | undefined
+    accessToken?: string;
     refreshToken?: string;
     expiresAt?: Date;
   };
@@ -62,14 +85,14 @@ export interface SocialAuthRequest {
 // For authenticated requests
 export interface AuthRequest extends Request {
   user?: {
-    id: string;
-    web3Username: string;
+    userId: string;
+    web3UserName: string;
   };
 }
 
 // JWT payload structure
 export interface JwtPayload {
-  id: string;
+  userId: string;
   iat: number;
   exp: number;
 }
