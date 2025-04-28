@@ -1,141 +1,275 @@
-import { User, SocialHandleType } from '../models/User';
-import { UserDTO, SocialHandleDTO } from '../types/user';
-import sequelize from '../config/db';
+import { User } from '../models/User';
+import UserSocialHandle from '../models/UserSocialHandle';
+import UserWallet from '../models/UserWallet';
+import UserRewardHistory from '../models/UserRewardHistory';
+import { UserDTO, UserSocialHandleDTO, UserWalletDTO, UserRewardHistoryDTO } from '../types/user';
+import { Op } from 'sequelize';
 
 class UserRepository {
-  async findByWeb3Username(web3Username: string): Promise<UserDTO | null> {
-    try {
-      const user = await User.findOne({ 
-        where: { web3Username }
-      });
-      
-      if (!user) {
-        return null;
-      }
-      
-      return this.mapToDTO(user);
-    } catch (error) {
-      console.error('Error in findByWeb3Username:', error);
-      throw error;
-    }
-  }
-
-  async findBySocialIdentity(provider: string, socialId: string): Promise<UserDTO | null> {
-    try {
-      // Use raw query or Sequelize's JSONB querying capabilities
-      const user = await User.findOne({
-        where: sequelize.literal(
-          `"socialHandles"::jsonb @> '[{"provider":"${provider}","socialId":"${socialId}"}]'`
-        )
-      });
-      
-      if (!user) {
-        return null;
-      }
-      
-      return this.mapToDTO(user);
-    } catch (error) {
-      console.error('Error in findBySocialIdentity:', error);
-      throw error;
-    }
-  }
-
   async createUser(userData: UserDTO): Promise<UserDTO> {
     try {
-      // Process social handles to match the model
-      const processedSocialHandles = userData.socialHandles?.map(handle => ({
-        provider: handle.provider,
-        socialId: handle.socialId,
-        username: handle.username,
-        email: handle.email,
-        displayName: handle.displayName,
-        profilePicture: handle.profilePicture,
-        connectedAt: handle.connectedAt || new Date()
-        // Note: tokens are not stored in the DB model
-      })) || [];
-  
-      // Create user with all data including socialHandles
       const user = await User.create({
-        web3Username: userData.web3Username,
-        did: userData.did,
-        wallet: userData.wallet,
+        web3UserName: userData.web3UserName,
+        DiD: userData.DiD,
         twitterAccessToken: userData.twitterAccessToken,
         twitterRefreshToken: userData.twitterRefreshToken,
         isEarlyUser: userData.isEarlyUser || false,
-        isActive: userData.isActive !== undefined ? userData.isActive : true,
+        isActiveUser: userData.isActiveUser || true,
         activeClanId: userData.activeClanId,
-        clanJoinDate: userData.clanJoinDate,
-        joinedCampaigns: userData.joinedCampaigns || [],
-        rewardHistory: userData.rewardHistory || [],
-        socialHandles: processedSocialHandles,
-        lastLogin: userData.lastLogin || new Date()
+        clanJoinDate: userData.clanJoinDate
       });
-      
-      return this.mapToDTO(user);
+
+      // Create social handles if provided
+      if (userData.socialHandles && userData.socialHandles.length > 0) {
+        for (const handle of userData.socialHandles) {
+          await UserSocialHandle.create({
+            userId: user.userId,
+            provider: handle.provider,
+            socialId: handle.socialId,
+            username: handle.username,
+            email: handle.email,
+            displayName: handle.displayName,
+            profilePicture: handle.profilePicture
+          });
+        }
+      }
+
+      // Create wallets if provided
+      if (userData.wallets && userData.wallets.length > 0) {
+        for (const wallet of userData.wallets) {
+          await UserWallet.create({
+            userId: user.userId,
+            walletAddress: wallet.walletAddress,
+            chain: wallet.chain,
+            walletType: wallet.walletType,
+            isPrimary: wallet.isPrimary || false,
+            addedAt: new Date(),
+            isActive: wallet.isActive || true
+          });
+        }
+      }
+
+      // Create reward history if provided
+      if (userData.rewardHistory && userData.rewardHistory.length > 0) {
+        for (const reward of userData.rewardHistory) {
+          await UserRewardHistory.create({
+            userId: user.userId,
+            campaignId: reward.campaignId,
+            reward: reward.reward,
+            rewardDate: reward.rewardDate
+          });
+        }
+      }
+
+      // Return the created user with all associations
+      return this.findById(user.userId);
     } catch (error) {
       console.error('Error in createUser:', error);
       throw error;
     }
   }
 
-  async updateLastLogin(id: string): Promise<void> {
-    try {
-      await User.update(
-        { lastLogin: new Date() },
-        { where: { id } }
-      );
-    } catch (error) {
-      console.error('Error in updateLastLogin:', error);
-      throw error;
-    }
-  }
-
-  async addSocialHandle(userId: string, socialHandle: SocialHandleDTO): Promise<void> {
+  async updateUser(userId: string, userData: Partial<UserDTO>): Promise<UserDTO> {
     try {
       const user = await User.findByPk(userId);
+      
       if (!user) {
         throw new Error('User not found');
       }
-      
-      // Process the social handle to match the model
-      const processedHandle: SocialHandleType = {
-        provider: socialHandle.provider,
-        socialId: socialHandle.socialId,
-        username: socialHandle.username,
-        email: socialHandle.email,
-        displayName: socialHandle.displayName,
-        profilePicture: socialHandle.profilePicture,
-        connectedAt: socialHandle.connectedAt || new Date()
-      };
-      
-      // Add new social handle to existing ones
-      const socialHandles = user.socialHandles || [];
-      socialHandles.push(processedHandle);
-      
-      // Update the user
-      await user.update({ socialHandles });
+
+      // Update user fields
+      if (userData.web3UserName) user.web3UserName = userData.web3UserName;
+      if (userData.DiD) user.DiD = userData.DiD;
+      if (userData.twitterAccessToken) user.twitterAccessToken = userData.twitterAccessToken;
+      if (userData.twitterRefreshToken) user.twitterRefreshToken = userData.twitterRefreshToken;
+      if (userData.isEarlyUser !== undefined) user.isEarlyUser = userData.isEarlyUser;
+      if (userData.isActiveUser !== undefined) user.isActiveUser = userData.isActiveUser;
+      if (userData.activeClanId !== undefined) user.activeClanId = userData.activeClanId;
+      if (userData.clanJoinDate !== undefined) user.clanJoinDate = userData.clanJoinDate;
+
+      await user.save();
+
+      // Update social handles if provided
+      if (userData.socialHandles && userData.socialHandles.length > 0) {
+        // Handle updates for social handles (simplified approach: delete and recreate)
+        await UserSocialHandle.destroy({ where: { userId } });
+        
+        for (const handle of userData.socialHandles) {
+          await UserSocialHandle.create({
+            userId,
+            provider: handle.provider,
+            socialId: handle.socialId,
+            username: handle.username,
+            email: handle.email,
+            displayName: handle.displayName,
+            profilePicture: handle.profilePicture
+          });
+        }
+      }
+
+      // Update wallets if provided
+      if (userData.wallets && userData.wallets.length > 0) {
+        // Similar approach for wallets: delete and recreate
+        await UserWallet.destroy({ where: { userId } });
+        
+        for (const wallet of userData.wallets) {
+          await UserWallet.create({
+            userId,
+            walletAddress: wallet.walletAddress,
+            chain: wallet.chain,
+            walletType: wallet.walletType,
+            isPrimary: wallet.isPrimary || false,
+            addedAt: new Date(),
+            isActive: wallet.isActive || true
+          });
+        }
+      }
+
+      // Return the updated user with all associations
+      return this.findById(userId);
     } catch (error) {
-      console.error('Error in addSocialHandle:', error);
+      console.error('Error in updateUser:', error);
       throw error;
     }
   }
 
-  private mapToDTO(user: User): UserDTO {
+  async findById(userId: string): Promise<UserDTO> {
+    try {
+      const user = await User.findByPk(userId, {
+        include: [
+          { model: UserSocialHandle, as: 'socialHandles' },
+          { model: UserWallet, as: 'wallets' },
+          { model: UserRewardHistory, as: 'rewardHistory' }
+        ]
+      });
+
+      if (!user) {
+        throw new Error('User not found');
+      }
+
+      return this.mapToUserDTO(user);
+    } catch (error) {
+      console.error('Error in findById:', error);
+      throw error;
+    }
+  }
+
+  async findAll(page: number = 1, limit: number = 10): Promise<{ users: UserDTO[], total: number, pages: number }> {
+    try {
+      const offset = (page - 1) * limit;
+      
+      const { rows, count } = await User.findAndCountAll({
+        include: [
+          { model: UserSocialHandle, as: 'socialHandles' },
+          { model: UserWallet, as: 'wallets' },
+          { model: UserRewardHistory, as: 'rewardHistory' }
+        ],
+        limit,
+        offset,
+        order: [['createdAt', 'DESC']]
+      });
+
+      const users = rows.map(user => this.mapToUserDTO(user));
+      
+      return {
+        users,
+        total: count,
+        pages: Math.ceil(count / limit)
+      };
+    } catch (error) {
+      console.error('Error in findAll:', error);
+      throw error;
+    }
+  }
+
+  async findByStatus(isActive: boolean, page: number = 1, limit: number = 10): Promise<{ users: UserDTO[], total: number, pages: number }> {
+    try {
+      const offset = (page - 1) * limit;
+      
+      const { rows, count } = await User.findAndCountAll({
+        where: { isActiveUser: isActive },
+        include: [
+          { model: UserSocialHandle, as: 'socialHandles' },
+          { model: UserWallet, as: 'wallets' },
+          { model: UserRewardHistory, as: 'rewardHistory' }
+        ],
+        limit,
+        offset,
+        order: [['createdAt', 'DESC']]
+      });
+
+      const users = rows.map(user => this.mapToUserDTO(user));
+      
+      return {
+        users,
+        total: count,
+        pages: Math.ceil(count / limit)
+      };
+    } catch (error) {
+      console.error('Error in findByStatus:', error);
+      throw error;
+    }
+  }
+
+  private mapToUserDTO(user: User): UserDTO {
+    // Map social handles
+    const socialHandles: UserSocialHandleDTO[] = user.socialHandles ? 
+      user.socialHandles.map(handle => ({
+        id: handle.id,
+        userId: handle.userId,
+        provider: handle.provider,
+        socialId: handle.socialId,
+        username: handle.username,
+        email: handle.email,
+        displayName: handle.displayName,
+        profilePicture: handle.profilePicture,
+        createdAt: handle.createdAt,
+        updatedAt: handle.updatedAt
+      })) : [];
+
+    // Map wallets
+    const wallets: UserWalletDTO[] = user.wallets ?
+      user.wallets.map(wallet => ({
+        walletId: wallet.walletId,
+        userId: wallet.userId,
+        walletAddress: wallet.walletAddress,
+        chain: wallet.chain,
+        walletType: wallet.walletType,
+        isPrimary: wallet.isPrimary,
+        addedAt: wallet.addedAt,
+        isActive: wallet.isActive,
+        createdAt: wallet.createdAt,
+        updatedAt: wallet.updatedAt
+      })) : [];
+
+    // Map reward history
+    const rewardHistory: UserRewardHistoryDTO[] = user.rewardHistory ?
+      user.rewardHistory.map(reward => ({
+        id: reward.id,
+        userId: reward.userId,
+        campaignId: reward.campaignId,
+        reward: reward.reward,
+        rewardDate: reward.rewardDate,
+        createdAt: reward.createdAt,
+        updatedAt: reward.updatedAt
+      })) : [];
+
+    // Return complete DTO
     return {
-      id: user.id,
-      web3Username: user.web3Username,
-      did: user.did,
-      wallet: user.wallet,
+      userId: user.userId,
+      web3UserName: user.web3UserName,
+      DiD: user.DiD,
       twitterAccessToken: user.twitterAccessToken,
       twitterRefreshToken: user.twitterRefreshToken,
       isEarlyUser: user.isEarlyUser,
-      isActive: user.isActive,
+      isActiveUser: user.isActiveUser,
       activeClanId: user.activeClanId,
       clanJoinDate: user.clanJoinDate,
-      joinedCampaigns: user.joinedCampaigns,
-      rewardHistory: user.rewardHistory,
-      socialHandles: user.socialHandles,
-      lastLogin: user.lastLogin
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+      socialHandles,
+      wallets,
+      rewardHistory
     };
   }
 }
