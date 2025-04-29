@@ -7,6 +7,7 @@ import sequelize from './config/db';
 import './models/User'; // Import to initialize models
 // Import at the top of your server.ts or index.ts file
 import './models/associations';
+import setupAssociations from './models/associations';
 // Route imports
 import userRoutes from './routes/usersRoutes';
 import googleAuthRoutes from './routes/googleAuthRoutes';
@@ -17,6 +18,12 @@ import passport from 'passport';
 import session from 'express-session';
 import twitterAuthRoutes from './routes/twitterAuthRoutes';
 import path from 'path';
+import './models/User';
+import './models/Campaign';
+import './models/CampaignLeaderBoard';
+import './models/CampaignLeaderBoardUser';
+import './models/CampaignParticipant';
+setupAssociations(); // Call the function to set up all associations
 
 
 // Load env vars

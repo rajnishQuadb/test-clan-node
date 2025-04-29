@@ -2,30 +2,111 @@ import User from './User';
 import UserRewardHistory from './UserRewardHistory';
 import UserWallet from './UserWallet';
 import UserSocialHandle from './UserSocialHandle';
+import Campaign from './Campaign';
+import CampaignParticipant from './CampaignParticipant';
+import CampaignLeaderBoard from './CampaignLeaderBoard';
+import CampaignLeaderBoardUser from './CampaignLeaderBoardUser';
 
-// Set up associations
-User.hasMany(UserSocialHandle, {
-  foreignKey: 'userId',
-  as: 'socialHandles'
-});
-UserSocialHandle.belongsTo(User, {
-  foreignKey: 'userId'
-});
+// Setup all model associations
+export default function setupAssociations() {
+  // User related associations
+  User.hasMany(UserSocialHandle, {
+    foreignKey: 'userId',
+    as: 'socialHandles',
+    onDelete: 'CASCADE'
+  });
+  UserSocialHandle.belongsTo(User, {
+    foreignKey: 'userId'
+  });
 
-User.hasMany(UserWallet, {
-  foreignKey: 'userId',
-  as: 'wallets'
-});
-UserWallet.belongsTo(User, {
-  foreignKey: 'userId'
-});
+  User.hasMany(UserWallet, {
+    foreignKey: 'userId',
+    as: 'wallets',
+    onDelete: 'CASCADE'
+  });
+  UserWallet.belongsTo(User, {
+    foreignKey: 'userId'
+  });
 
-User.hasMany(UserRewardHistory, {
-  foreignKey: 'userId',
-  as: 'rewardHistory'
-});
-UserRewardHistory.belongsTo(User, {
-  foreignKey: 'userId'
-});
-
-export { User, UserSocialHandle, UserWallet, UserRewardHistory };
+  User.hasMany(UserRewardHistory, {
+    foreignKey: 'userId',
+    as: 'rewardHistory',
+    onDelete: 'CASCADE'
+  });
+  UserRewardHistory.belongsTo(User, {
+    foreignKey: 'userId'
+  });
+  
+  // Remove Clan associations
+  
+  // Campaign & CampaignLeaderBoard - One-to-One
+  Campaign.belongsTo(CampaignLeaderBoard, { 
+    foreignKey: 'leaderBoardId', 
+    as: 'leaderBoard'
+  });
+  CampaignLeaderBoard.hasOne(Campaign, { 
+    foreignKey: 'leaderBoardId', 
+    as: 'campaign'
+  });
+  
+  // CampaignLeaderBoard & Campaign - One-to-One (circular reference)
+  CampaignLeaderBoard.belongsTo(Campaign, { 
+    foreignKey: 'campaignId', 
+    as: 'campaignDetails'
+  });
+  
+  // Campaign & CampaignParticipant - One-to-Many
+  Campaign.hasMany(CampaignParticipant, { 
+    foreignKey: 'campaignId', 
+    as: 'participants',
+    onDelete: 'CASCADE'
+  });
+  CampaignParticipant.belongsTo(Campaign, { 
+    foreignKey: 'campaignId', 
+    as: 'campaign'
+  });
+  
+  // User & CampaignParticipant - One-to-Many
+  User.hasMany(CampaignParticipant, { 
+    foreignKey: 'userId', 
+    as: 'joinedCampaigns',
+    onDelete: 'CASCADE'
+  });
+  CampaignParticipant.belongsTo(User, { 
+    foreignKey: 'userId', 
+    as: 'user'
+  });
+  
+  // Campaign & UserRewardHistory - One-to-Many
+  Campaign.hasMany(UserRewardHistory, {
+    foreignKey: 'campaignId',
+    as: 'rewards',
+    onDelete: 'CASCADE'
+  });
+  UserRewardHistory.belongsTo(Campaign, {
+    foreignKey: 'campaignId',
+    as: 'campaign'
+  });
+  
+  // CampaignLeaderBoard & CampaignLeaderBoardUser - One-to-Many
+  CampaignLeaderBoard.hasMany(CampaignLeaderBoardUser, { 
+    foreignKey: 'leaderBoardId', 
+    as: 'leaderboardUsers',
+    onDelete: 'CASCADE'
+  });
+  CampaignLeaderBoardUser.belongsTo(CampaignLeaderBoard, { 
+    foreignKey: 'leaderBoardId', 
+    as: 'leaderboard'
+  });
+  
+  // User & CampaignLeaderBoardUser - One-to-Many
+  User.hasMany(CampaignLeaderBoardUser, { 
+    foreignKey: 'userId', 
+    as: 'leaderboardRankings',
+    onDelete: 'CASCADE'
+  });
+  CampaignLeaderBoardUser.belongsTo(User, { 
+    foreignKey: 'userId', 
+    as: 'user'
+  });
+}
