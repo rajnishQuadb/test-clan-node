@@ -1,103 +1,106 @@
-import { Model, DataTypes, Optional } from 'sequelize';
+import { Model, DataTypes, Optional, HasManyCreateAssociationMixin, HasManyGetAssociationsMixin } from 'sequelize';
 import sequelize from '../config/db';
-
-// Define social handle type for the JSONB array
-export type SocialHandleType = {
-  provider: 'google' | 'discord' | 'twitter' | 'apple';
-  socialId: string;
-  username?: string;
-  email?: string;
-  displayName?: string;
-  profilePicture?: string;
-//  tokens?: object;
-  connectedAt: Date;
-  isPrimary: boolean;
-};
+import UserSocialHandle from './UserSocialHandle';
+import UserWallet from './UserWallet';
+import UserRewardHistory from './UserRewardHistory';
 
 // Define types for User
 interface UserAttributes {
-  id: string;
-  web3Username: string;
-  did?: string;
-  wallet?: string;
-  kiltConnectionDate?: Date;
-  isKiltConnected: boolean;
-  socialHandles?: SocialHandleType[];
-  isActive: boolean;
-  lastLogin: Date;
-  createdAt?: Date;
-  updatedAt?: Date;
+  userId: string;                 // UUID Primary Key
+  web3UserName: string;           // Unique, required
+  DiD?: string;                   // Unique
+  twitterAccessToken?: string;    // Encrypted, optional
+  twitterRefreshToken?: string;   // Encrypted, optional
+  isEarlyUser: boolean;           // Boolean flag
+  isActiveUser: boolean;          // Boolean flag
+  activeClanId?: string;          // FK to Clan
+  clanJoinDate?: Date;            // When user joined a clan
+  createdAt?: Date;               // Auto by Sequelize
+  updatedAt?: Date;               // Auto by Sequelize
 }
 
-interface UserCreationAttributes extends Optional<UserAttributes, 'id'> {}
+interface UserCreationAttributes extends Optional<UserAttributes, 'userId'> {}
 
 export class User extends Model<UserAttributes, UserCreationAttributes> 
   implements UserAttributes {
-  public id!: string;
-  public web3Username!: string;
-  public did?: string;
-  public wallet?: string;
-  public kiltConnectionDate?: Date;
-  public isKiltConnected!: boolean;
-  public socialHandles?: SocialHandleType[];
-  public isActive!: boolean;
-  public lastLogin!: Date;
+  public userId!: string;
+  public web3UserName!: string;
+  public DiD?: string;
+  public twitterAccessToken?: string;
+  public twitterRefreshToken?: string;
+  public isEarlyUser!: boolean;
+  public isActiveUser!: boolean;
+  public activeClanId?: string;
+  public clanJoinDate?: Date;
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
+  
+  // Association methods
+  public createSocialHandle!: HasManyCreateAssociationMixin<UserSocialHandle>;
+  public getSocialHandles!: HasManyGetAssociationsMixin<UserSocialHandle>;
+  public createWallet!: HasManyCreateAssociationMixin<UserWallet>;
+  public getWallets!: HasManyGetAssociationsMixin<UserWallet>;
+  public createRewardHistory!: HasManyCreateAssociationMixin<UserRewardHistory>;
+  public getRewardHistory!: HasManyGetAssociationsMixin<UserRewardHistory>;
+  
+  // Associations
+  public readonly socialHandles?: UserSocialHandle[];
+  public readonly wallets?: UserWallet[];
+  public readonly rewardHistory?: UserRewardHistory[];
 }
 
 // Initialize User model
 User.init(
   {
-    id: {
+    userId: {
       type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true
     },
-    web3Username: {
+    web3UserName: {
       type: DataTypes.STRING,
       unique: true,
       allowNull: false
     },
-    did: {
+    DiD: {
       type: DataTypes.STRING,
+      unique: true,
       allowNull: true
     },
-    wallet: {
-      type: DataTypes.STRING,
+    twitterAccessToken: {
+      type: DataTypes.TEXT,  // Encrypted, so needs more space
       allowNull: true
     },
-    kiltConnectionDate: {
-      type: DataTypes.DATE,
+    twitterRefreshToken: {
+      type: DataTypes.TEXT,  // Encrypted, so needs more space
       allowNull: true
     },
-    isKiltConnected: {
+    isEarlyUser: {
       type: DataTypes.BOOLEAN,
       defaultValue: false
     },
-    socialHandles: {
-      type: DataTypes.JSONB,
-      allowNull: true,
-      defaultValue: []
-    },
-    isActive: {
+    isActiveUser: {
       type: DataTypes.BOOLEAN,
       defaultValue: true
     },
-    lastLogin: {
+    activeClanId: {
+      type: DataTypes.UUID,
+      allowNull: true
+      // references will be set up in associations
+    },
+    clanJoinDate: {
       type: DataTypes.DATE,
-      defaultValue: DataTypes.NOW
+      allowNull: true
     }
   },
   {
     sequelize,
-    tableName: 'users',
+    tableName: 'Users',  // Uppercase table name
     timestamps: true,
     indexes: [
-      {
-        unique: true,
-        fields: ['web3Username']
-      }
+      { unique: true, fields: ['web3UserName'] },
+      { unique: true, fields: ['DiD'] },
+      { fields: ['activeClanId'] }
     ]
   }
 );

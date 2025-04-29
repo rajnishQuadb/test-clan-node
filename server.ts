@@ -5,7 +5,8 @@ import cors from 'cors';
 // Database and models
 import sequelize from './config/db';
 import './models/User'; // Import to initialize models
-
+// Import at the top of your server.ts or index.ts file
+import './models/associations';
 // Route imports
 import userRoutes from './routes/usersRoutes';
 import googleAuthRoutes from './routes/googleAuthRoutes';
@@ -16,7 +17,7 @@ import passport from 'passport';
 import session from 'express-session';
 import twitterAuthRoutes from './routes/twitterAuthRoutes';
 import path from 'path';
-
+import clanRoutes from './routes/clansRoutes';
 
 // Load env vars
 dotenv.config();
@@ -55,19 +56,27 @@ app.get('/termsOfService', (req, res) => {
 
 // Root route
 app.get('/', (req: Request, res: Response) => {
-  res.send('CLANS-NODE-APP-TYPESCRIPT API is running');
+  res.send('CLANS-NODE-APP is running');
+});
+app.get('/api', (req: Request, res: Response) => {
+  res.send('CLANS-NODE-APP API is running');
+});
+
+app.get('/api/v1/dev', (req: Request, res: Response) => {
+  res.send('CLANS-NODE-APP API v1 is running');
 });
 
 // Register Twitter auth routes
 app.use('/api/auth', twitterAuthRoutes);
 
 // Mount routes
-app.use('/api/users', userRoutes);
+app.use('/api/user', userRoutes);
 // Register Google auth routes
 app.use('/api/auth', googleAuthRoutes);
 // Register Apple auth routes
 app.use('/api/auth', appleAuthRoutes);
-
+// Register clans routes
+app.use('/api/clans', clanRoutes);
 // Not found middleware
 app.use((req: Request, res: Response, next: NextFunction) => {
   next(new AppError(`Cannot find ${req.originalUrl} on this server`, HTTP_STATUS.NOT_FOUND));

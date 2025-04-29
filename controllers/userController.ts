@@ -1,62 +1,194 @@
 import { Request, Response, NextFunction } from 'express';
 import userService from '../services/userService';
-import { SocialAuthRequest } from '../types/user';
 import { catchAsync } from '../utils/error-handler';
 import { HTTP_STATUS } from '../constants/http-status';
-import { encryptData } from '../utils/encryption';
+import { UserDTO } from '../types/user';
+import { AppError } from '../utils/error-handler';
+import jwt from 'jsonwebtoken';
 
-export const socialAuth = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-  const data: SocialAuthRequest = req.body;
+// Create a new user
+export const Create_User = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+  const userData: UserDTO = req.body;
   
-  const { user, token } = await userService.socialAuth(data);
+  const user = await userService.createUser(userData);
   
-  // Get primary social if exists with proper type definition
-  const primarySocial = user.socialHandles?.find(h => h.isPrimary) || user.socialHandles?.[0] || {
-    username: undefined,
-    email: undefined,
-    displayName: undefined,
-    profilePicture: undefined
-  };
+  // Generate JWT token
+  const token = jwt.sign(
+    { id: user.userId },  // Make sure it's "id" to match what your auth middleware expects
+    process.env.JWT_SECRET || 'your-default-secret',
+    { expiresIn: '30d' }
+  );
   
-  // Prepare response
-  const responseData = {
+  res.status(HTTP_STATUS.CREATED).json({
     success: true,
-    token,
-    user: {           
-      _id: user.id,
-      web3Username: user.web3Username,
-      username: primarySocial.username,
-      email: primarySocial.email,
-      displayName: primarySocial.displayName,
-      profilePicture: primarySocial.profilePicture,
-      hasKiltConnection: user.isKiltConnected,
-      kilt: {
-        did: user.did,
-        wallet: user.wallet,
-        connectionDate: user.kiltConnectionDate
-      },
-      socialHandles: user.socialHandles?.map(handle => ({
-        provider: handle.provider,
-        displayName: handle.displayName
-      })) || []
+    message: 'User created successfully',
+    token, // Include token in response
+    data: {
+      userId: user.userId,
+      web3UserName: user.web3UserName,
+      DiD: user.DiD,
+      isActiveUser: user.isActiveUser,
+      isEarlyUser: user.isEarlyUser,
+      activeClanId: user.activeClanId,
+      createdAt: user.createdAt
     }
-  };
-  
-  // Encrypt if needed
-  if (process.env.ENCRYPT_RESPONSES === 'true') {
-    try {
-      const encryptedData = encryptData(responseData);
-      return res.status(HTTP_STATUS.OK).json({
-        encrypted: true,
-        data: encryptedData
-      });
-    } catch (error) {
-      console.error('Encryption error:', error);
-      // Fall back to unencrypted response
-    }
-  }
-  
-  res.status(HTTP_STATUS.OK).json(responseData);
+  });
 });
 
-// Additional controller methods will go here
+
+// Update an existing user
+export const Update_User = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+  const userId = req.params.id;
+  const userData: Partial<UserDTO> = req.body;
+  
+  const user = await userService.updateUser(userId, userData);
+  
+  res.status(HTTP_STATUS.OK).json({
+    success: true,
+    message: 'User updated successfully',
+    data: {
+      userId: user.userId,
+      web3UserName: user.web3UserName,
+      DiD: user.DiD,
+      isActiveUser: user.isActiveUser,
+      isEarlyUser: user.isEarlyUser,
+      activeClanId: user.activeClanId,
+      updatedAt: user.updatedAt
+    }
+  });
+});
+
+// Get a single user by ID
+export const Get_Single_User = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+  const userId = req.params.id;
+  
+  const user = await userService.getUserById(userId);
+  
+  // Check if sensitive data should be excluded (for non-admin users)
+  const isAdmin = req.headers['x-user-role'] === 'admin';
+  
+  let responseData: any = {
+    userId: user.userId,
+    web3UserName: user.web3UserName,
+    DiD: user.DiD,
+    isActiveUser: user.isActiveUser,
+    isEarlyUser: user.isEarlyUser,
+    activeClanId: user.activeClanId,
+    clanJoinDate: user.clanJoinDate,
+    createdAt: user.createdAt
+  };
+  
+  // Include related data
+  responseData.socialHandles = user.socialHandles?.map(handle => ({
+    provider: handle.provider,
+    username: handle.username,
+    displayName: handle.displayName,
+    profilePicture: handle.profilePicture
+  }));
+  
+  // Only include wallet addresses for admin or self
+  responseData.wallets = user.wallets?.map(wallet => ({
+    chain: wallet.chain,
+    walletType: wallet.walletType,
+    isPrimary: wallet.isPrimary,
+    walletAddress: isAdmin ? wallet.walletAddress : undefined
+  }));
+  
+  // Only include reward history for admin or self
+  if (isAdmin) {
+    responseData.rewardHistory = user.rewardHistory;
+  }
+  
+  res.status(HTTP_STATUS.OK).json({
+    success: true,
+    data: responseData
+  });
+});
+
+// Get all users with pagination
+export const Get_All_Users = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = parseInt(req.query.limit as string) || 10;
+  
+  const { users, total, pages } = await userService.getAllUsers(page, limit);
+  
+  // Map to simplified representation
+  const simplifiedUsers = users.map(user => ({
+    userId: user.userId,
+    web3UserName: user.web3UserName,
+    DiD: user.DiD,
+    isActiveUser: user.isActiveUser,
+    isEarlyUser: user.isEarlyUser,
+    activeClanId: user.activeClanId,
+    socialHandlesCount: user.socialHandles?.length || 0,
+    walletsCount: user.wallets?.length || 0,
+    createdAt: user.createdAt
+  }));
+  
+  res.status(HTTP_STATUS.OK).json({
+    success: true,
+    data: simplifiedUsers,
+    pagination: {
+      total,
+      page,
+      pages,
+      limit
+    }
+  });
+});
+
+// Get filtered users (active/deleted) with pagination
+export const Get_Filtered_Users = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+  const status = req.body.status || 'active';
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = parseInt(req.query.limit as string) || 10;
+  
+  const { users, total, pages } = await userService.getFilteredUsers(status, page, limit);
+  
+  // Map to simplified representation
+  const simplifiedUsers = users.map(user => ({
+    userId: user.userId,
+    web3UserName: user.web3UserName,
+    DiD: user.DiD,
+    isActiveUser: user.isActiveUser,
+    isEarlyUser: user.isEarlyUser,
+    activeClanId: user.activeClanId,
+    socialHandlesCount: user.socialHandles?.length || 0,
+    walletsCount: user.wallets?.length || 0,
+    createdAt: user.createdAt
+  }));
+  
+  res.status(HTTP_STATUS.OK).json({
+    success: true,
+    filter: status,
+    data: simplifiedUsers,
+    pagination: {
+      total,
+      page,
+      pages,
+      limit
+    }
+  });
+});
+
+
+// upate user to the early user
+export const Early_User = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+  const { userId } = req.params; 
+
+  const user = await userService.updateUserToEarlyUser(userId);
+
+  res.status(HTTP_STATUS.OK).json({
+    success: true,
+    message: 'User updated to early user successfully',
+    data: {
+      userId: user.userId,
+      web3UserName: user.web3UserName,
+      DiD: user.DiD,
+      isActiveUser: user.isActiveUser,
+      isEarlyUser: user.isEarlyUser,
+      activeClanId: user.activeClanId,
+      updatedAt: user.updatedAt
+    }
+  });
+});

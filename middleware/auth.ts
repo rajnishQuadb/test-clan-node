@@ -3,15 +3,7 @@ import jwt from 'jsonwebtoken';
 import { User } from '../models/User';
 import { AppError } from '../utils/error-handler';
 import { HTTP_STATUS } from '../constants/http-status';
-
-// Extend Express Request to include user
-declare global {
-  namespace Express {
-    interface Request {
-      user?: any;
-    }
-  }
-}
+import { AuthRequest } from '../types/user'; // Import from your types instead
 
 export const protect = async (req: Request, res: Response, next: NextFunction) => {
   let token: string;
@@ -28,14 +20,17 @@ export const protect = async (req: Request, res: Response, next: NextFunction) =
       const decoded = jwt.verify(token, process.env.JWT_SECRET || '') as { id: string };
       
       // Get user from token
-      const user = await User.findOne({ where: { id: decoded.id } });
+      const user = await User.findOne({ where: { userId: decoded.id } });
       
       if (!user) {
         return next(new AppError('User not found', HTTP_STATUS.UNAUTHORIZED));
       }
       
-      // Attach user to request object
-      req.user = user;
+      // Attach user to request object (only the parts needed for AuthRequest)
+      (req as AuthRequest).user = {
+        userId: user.userId,
+        web3UserName: user.web3UserName
+      };
       
       next();
     } catch (error) {
@@ -50,8 +45,16 @@ export const protect = async (req: Request, res: Response, next: NextFunction) =
 /**
  * Middleware to ensure inactive users cannot access protected resources
  */
-export const active = (req: Request, res: Response, next: NextFunction) => {
-  if (req.user && req.user.isActive) {
+export const active = async (req: Request, res: Response, next: NextFunction) => {
+  // First get the full user record since AuthRequest only has userId and web3UserName
+  const authReq = req as AuthRequest;
+  if (!authReq.user?.userId) {
+    return next(new AppError('Not authorized', HTTP_STATUS.UNAUTHORIZED));
+  }
+  
+  const user = await User.findOne({ where: { userId: authReq.user.userId } });
+  
+  if (user && user.isActiveUser) {
     next();
   } else {
     return next(new AppError('Account is inactive, please contact support', HTTP_STATUS.FORBIDDEN));
