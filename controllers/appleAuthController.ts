@@ -5,7 +5,7 @@ import { HTTP_STATUS } from '../constants/http-status';
 import { AppleAuthRequest } from '../types/appleAuth';
 import { encryptData } from '../utils/encryption';
 
-// Verify Apple identity token and authenticate user
+// Verify Apple identity token and return user data
 export const appleVerify = catchAsync(async (req: AppleAuthRequest, res: Response, next: NextFunction) => {
   const { identityToken, name, picture } = req.body;
   
@@ -22,7 +22,7 @@ export const appleVerify = catchAsync(async (req: AppleAuthRequest, res: Respons
   const responseData = {
     success: true,
     user: {
-      id: user.id,
+      appleId: user.appleId,
       email: user.email,
       name: user.name,
       picture: user.picture

@@ -2,9 +2,20 @@ import userRepository from '../repositories/userRepository';
 import { UserDTO } from '../types/user';
 import { AppError } from '../utils/error-handler';
 import { HTTP_STATUS } from '../constants/http-status';
+import jwt from 'jsonwebtoken';
 
 class UserService {
-  async createUser(userData: UserDTO): Promise<UserDTO> {
+    // Add this method to your UserService class
+    generateToken(userId: string): string {
+    return jwt.sign(
+      { id: userId },
+      process.env.JWT_SECRET || 'your-default-secret',
+      { expiresIn: '30d' }
+    );
+  }
+  
+  // Change return type here ↓
+  async createUser(userData: UserDTO): Promise<{ user: UserDTO, token: string }> {
     try {
       // Validate required fields
       if (!userData.web3UserName) {
@@ -30,7 +41,12 @@ class UserService {
       userData.isActiveUser = userData.isActiveUser ?? true;
       userData.isEarlyUser = userData.isEarlyUser ?? false;
       
-      return await userRepository.createUser(userData);
+      const user = await userRepository.createUser(userData);
+      
+      // Generate token here
+      const token = this.generateToken(user.userId as string);
+      
+      return { user, token };
     } catch (error) {
       if (error instanceof AppError) throw error;
       console.error('Error in createUser service:', error);

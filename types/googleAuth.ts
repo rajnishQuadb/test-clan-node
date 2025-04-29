@@ -1,7 +1,6 @@
 import { Request } from 'express';
 
 export interface GoogleUserDTO {
-  id?: string;
   googleId: string;
   email: string;
   name: string;

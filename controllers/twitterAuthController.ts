@@ -41,7 +41,7 @@ export const twitterCallback = catchAsync(async (req: TwitterAuthRequest, res: R
       const responseData = {
         success: true,
         user: {
-          id: user.id,
+          twitterId: user.twitterId,
           username: user.username,
           displayName: user.displayName,
           email: user.email,
@@ -95,7 +95,7 @@ export const twitterTestAuth = catchAsync(async (req: Request, res: Response, ne
   const responseData = {
     success: true,
     user: {
-      id: user.id,
+      twitterId: user.twitterId,
       username: user.username,
       displayName: user.displayName,
       email: user.email,

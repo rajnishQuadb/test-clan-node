@@ -1,7 +1,6 @@
 import jwt from 'jsonwebtoken';
 import passport from 'passport';
 import { Strategy as TwitterStrategy } from 'passport-twitter';
-import twitterAuthRepository from '../repositories/twitterAuthRepository';
 import { TwitterProfile, TwitterUserDTO, TwitterTokens } from '../types/twitterAuth';
 import { AppError } from '../utils/error-handler';
 import { HTTP_STATUS } from '../constants/http-status';
@@ -47,11 +46,11 @@ class TwitterAuthService {
     
     // Deserialize user from session
     passport.deserializeUser((obj, done) => {
-          done(null, obj as false | TwitterUserDTO | null | undefined);
-        });
+      done(null, obj as false | TwitterUserDTO | null | undefined);
+    });
   }
   
-  // Handle user creation or update from Twitter profile
+  // Handle user from Twitter profile - just create the object without saving to DB
   async handleTwitterCallback(profile: TwitterProfile, tokens: TwitterTokens): Promise<{ user: TwitterUserDTO, accessToken: string, refreshToken: string }> {
     try {
       const { id: twitterId, username, displayName, emails, photos, _json } = profile;
@@ -68,42 +67,18 @@ class TwitterAuthService {
         ? photos[0].value 
         : (_json && _json.profile_image_url_https) || undefined;
       
-      // Check if user exists
-      let user = await twitterAuthRepository.findByTwitterId(twitterId);
-      
-      if (!user) {
-        // Create new user
-        user = await twitterAuthRepository.createUser({
-          twitterId,
-          username,
-          displayName,
-          email,
-          profilePicture
-        });
-      } else {
-        // Update user information if needed
-        const updates: Partial<TwitterUserDTO> = {};
-        
-        if (displayName !== user.displayName) {
-          updates.displayName = displayName;
-        }
-        
-        if (profilePicture && profilePicture !== user.profilePicture) {
-          updates.profilePicture = profilePicture;
-        }
-        
-        if (email && email !== user.email) {
-          updates.email = email;
-        }
-        
-        if (Object.keys(updates).length > 0) {
-          user = await twitterAuthRepository.updateUser(user.id!, updates) || user;
-        }
-      }
+      // Create user object without DB storage
+      const user: TwitterUserDTO = {
+        twitterId,
+        username,
+        displayName,
+        email,
+        profilePicture
+      };
       
       // Generate JWT tokens
-      const accessToken = this.generateAccessToken(user.id!, user.username);
-      const refreshToken = this.generateRefreshToken(user.id!, user.username);
+      const accessToken = this.generateAccessToken(twitterId, username);
+      const refreshToken = this.generateRefreshToken(twitterId, username);
       
       return { user, accessToken, refreshToken };
     } catch (error) {
@@ -115,7 +90,7 @@ class TwitterAuthService {
     }
   }
   
-  // For testing purposes only
+  // For testing purposes only - no DB access
   async testMockAuth(mockData: {
     twitterId: string;
     username: string;
@@ -126,23 +101,18 @@ class TwitterAuthService {
     try {
       const { twitterId, username, displayName, email, profilePicture } = mockData;
       
-      // Check if user exists
-      let user = await twitterAuthRepository.findByTwitterId(twitterId);
-      
-      if (!user) {
-        // Create new user
-        user = await twitterAuthRepository.createUser({
-          twitterId,
-          username,
-          displayName,
-          email,
-          profilePicture
-        });
-      }
+      // Create user object without DB storage
+      const user: TwitterUserDTO = {
+        twitterId,
+        username,
+        displayName,
+        email,
+        profilePicture
+      };
       
       // Generate JWT tokens
-      const accessToken = this.generateAccessToken(user.id!, user.username);
-      const refreshToken = this.generateRefreshToken(user.id!, user.username);
+      const accessToken = this.generateAccessToken(twitterId, username);
+      const refreshToken = this.generateRefreshToken(twitterId, username);
       
       return { user, accessToken, refreshToken };
     } catch (error) {
@@ -152,18 +122,18 @@ class TwitterAuthService {
   }
   
   // Generate an access token
-  generateAccessToken(userId: string, username: string): string {
+  generateAccessToken(twitterId: string, username: string): string {
     return jwt.sign(
-      { id: userId, username },
+      { id: twitterId, username },
       process.env.JWT_SECRET || 'your_jwt_secret',
       { expiresIn: '15m' }
     );
   }
   
   // Generate a refresh token
-  generateRefreshToken(userId: string, username: string): string {
+  generateRefreshToken(twitterId: string, username: string): string {
     return jwt.sign(
-      { id: userId, username },
+      { id: twitterId, username },
       process.env.JWT_SECRET || 'your_jwt_secret',
       { expiresIn: '7d' }
     );

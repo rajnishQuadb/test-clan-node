@@ -1,6 +1,5 @@
 import { OAuth2Client } from 'google-auth-library';
 import jwt from 'jsonwebtoken';
-import googleAuthRepository from '../repositories/googleAuthRepository';
 import { GoogleTokenPayload, GoogleUserDTO } from '../types/googleAuth';
 import { AppError } from '../utils/error-handler';
 import { HTTP_STATUS } from '../constants/http-status';
@@ -32,7 +31,7 @@ class GoogleAuthService {
     }
   }
   
-  // Verify Google ID token and handle user login/registration
+  // Verify Google ID token and return user data directly
   async verifyIdToken(idToken: string): Promise<{ user: GoogleUserDTO, accessToken: string, refreshToken: string }> {
     try {
       // Verify the token
@@ -52,30 +51,20 @@ class GoogleAuthService {
         throw new AppError('Missing required user information', HTTP_STATUS.BAD_REQUEST);
       }
       
-      // Check if user already exists
-      let user = await googleAuthRepository.findByEmail(email);
+      // Create user object but don't save it to DB
+      const user: GoogleUserDTO = {
+        googleId: sub,
+        email,
+        name,
+        givenName: given_name,
+        familyName: family_name,
+        picture,
+        emailVerified: !!email_verified
+      };
       
-      if (!user) {
-        // Create new user
-        user = await googleAuthRepository.createUser({
-          googleId: sub,
-          email,
-          name,
-          givenName: given_name,
-          familyName: family_name,
-          picture,
-          emailVerified: !!email_verified
-        });
-      } else {
-        // Update existing user if needed
-        if (!user.googleId) {
-          user = await googleAuthRepository.updateUser(user.id!, { googleId: sub }) || user;
-        }
-      }
-      
-      // Generate JWT tokens - but don't store them
-      const accessToken = this.generateAccessToken(user.id!, user.email);
-      const refreshToken = this.generateRefreshToken(user.id!, user.email);
+      // Generate JWT tokens
+      const accessToken = this.generateAccessToken(sub, email);
+      const refreshToken = this.generateRefreshToken(sub, email);
       
       return { user, accessToken, refreshToken };
     } catch (error) {
