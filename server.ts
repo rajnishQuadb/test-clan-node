@@ -65,6 +65,10 @@ app.get('/api', (req: Request, res: Response) => {
   res.send('CLANS-NODE-APP API is running');
 });
 
+app.get('/api/v1/dev', (req: Request, res: Response) => {
+  res.send('CLANS-NODE-APP API v1 is running');
+});
+
 // Mount routes
 app.use('/api/user', userRoutes);
 // Register Google auth routes
@@ -72,7 +76,7 @@ app.use('/api/auth', googleAuthRoutes);
 // Register Apple auth routes
 app.use('/api/auth', appleAuthRoutes);
 // Register clans routes
-app.use('/clans', clanRoutes);
+app.use('/api/clans', clanRoutes);
 // Not found middleware
 app.use((req: Request, res: Response, next: NextFunction) => {
   next(new AppError(`Cannot find ${req.originalUrl} on this server`, HTTP_STATUS.NOT_FOUND));

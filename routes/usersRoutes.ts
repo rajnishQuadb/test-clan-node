@@ -19,8 +19,10 @@ router.get('/fetch/all', protect, Get_All_Users);
 router.get('/fetch/filter', protect, Get_Filtered_Users);
 
 // Then parameter-based routes
-router.get('/fetch/:id', protect, Get_Single_User);
-router.put('/update/:id', protect, Update_User);
+// router.get('/fetch/:id', protect, Get_Single_User);
+router.get('/fetch/:id', Get_Single_User);
+// router.put('/update/:id', protect, Update_User);
+router.put('/update/:id', Update_User);
 
 router.patch('/:userId/early-user', Early_User);
 

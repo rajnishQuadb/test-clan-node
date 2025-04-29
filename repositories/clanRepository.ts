@@ -94,6 +94,12 @@ async addUserToClan(userId: string, clanId: string): Promise<any> {
       throw new AppError('User not found.', HTTP_STATUS.NOT_FOUND);
     }
 
+    // update the activeClanId in the Users table
+    await User.update(
+      { activeClanId: clanId, clanJoinDate: new Date() }, // Set the activeClanId and clanJoinDate
+      { where: { userId } } // Specify the condition to update the correct user
+    );
+
     // Add the user to the ClanParticipants table
     await clanParticipant.create({
       userId,
