@@ -3,26 +3,18 @@ import userService from '../services/userService';
 import { catchAsync } from '../utils/error-handler';
 import { HTTP_STATUS } from '../constants/http-status';
 import { UserDTO } from '../types/user';
-import { AppError } from '../utils/error-handler';
-import jwt from 'jsonwebtoken';
+import { encryptData } from '../utils/encryption';
 
 // Create a new user
 export const Create_User = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
   const userData: UserDTO = req.body;
   
-  const user = await userService.createUser(userData);
+  const { user, token } = await userService.createUser(userData);
   
-  // Generate JWT token
-  const token = jwt.sign(
-    { id: user.userId },  // Make sure it's "id" to match what your auth middleware expects
-    process.env.JWT_SECRET || 'your-default-secret',
-    { expiresIn: '30d' }
-  );
-  
-  res.status(HTTP_STATUS.CREATED).json({
+  const responseData = {
     success: true,
     message: 'User created successfully',
-    token, // Include token in response
+    token,
     data: {
       userId: user.userId,
       web3UserName: user.web3UserName,
@@ -32,7 +24,23 @@ export const Create_User = catchAsync(async (req: Request, res: Response, next: 
       activeClanId: user.activeClanId,
       createdAt: user.createdAt
     }
-  });
+  };
+  
+  // Encrypt if needed
+  if (process.env.ENCRYPT_RESPONSES === 'true') {
+    try {
+      const encryptedData = encryptData(responseData);
+      return res.status(HTTP_STATUS.CREATED).json({
+        encrypted: true,
+        data: encryptedData
+      });
+    } catch (error) {
+      console.error('Encryption error:', error);
+      // Fall back to unencrypted response
+    }
+  }
+  
+  res.status(HTTP_STATUS.CREATED).json(responseData);
 });
 
 
@@ -43,7 +51,7 @@ export const Update_User = catchAsync(async (req: Request, res: Response, next: 
   
   const user = await userService.updateUser(userId, userData);
   
-  res.status(HTTP_STATUS.OK).json({
+  const responseData = {
     success: true,
     message: 'User updated successfully',
     data: {
@@ -55,7 +63,23 @@ export const Update_User = catchAsync(async (req: Request, res: Response, next: 
       activeClanId: user.activeClanId,
       updatedAt: user.updatedAt
     }
-  });
+  };
+  
+  // Encrypt if needed
+  if (process.env.ENCRYPT_RESPONSES === 'true') {
+    try {
+      const encryptedData = encryptData(responseData);
+      return res.status(HTTP_STATUS.OK).json({
+        encrypted: true,
+        data: encryptedData
+      });
+    } catch (error) {
+      console.error('Encryption error:', error);
+      // Fall back to unencrypted response
+    }
+  }
+  
+  res.status(HTTP_STATUS.OK).json(responseData);
 });
 
 // Get a single user by ID
@@ -68,18 +92,21 @@ export const Get_Single_User = catchAsync(async (req: Request, res: Response, ne
   const isAdmin = req.headers['x-user-role'] === 'admin';
   
   let responseData: any = {
-    userId: user.userId,
-    web3UserName: user.web3UserName,
-    DiD: user.DiD,
-    isActiveUser: user.isActiveUser,
-    isEarlyUser: user.isEarlyUser,
-    activeClanId: user.activeClanId,
-    clanJoinDate: user.clanJoinDate,
-    createdAt: user.createdAt
+    success: true,
+    data: {
+      userId: user.userId,
+      web3UserName: user.web3UserName,
+      DiD: user.DiD,
+      isActiveUser: user.isActiveUser,
+      isEarlyUser: user.isEarlyUser,
+      activeClanId: user.activeClanId,
+      clanJoinDate: user.clanJoinDate,
+      createdAt: user.createdAt
+    }
   };
   
   // Include related data
-  responseData.socialHandles = user.socialHandles?.map(handle => ({
+  responseData.data.socialHandles = user.socialHandles?.map(handle => ({
     provider: handle.provider,
     username: handle.username,
     displayName: handle.displayName,
@@ -87,7 +114,7 @@ export const Get_Single_User = catchAsync(async (req: Request, res: Response, ne
   }));
   
   // Only include wallet addresses for admin or self
-  responseData.wallets = user.wallets?.map(wallet => ({
+  responseData.data.wallets = user.wallets?.map(wallet => ({
     chain: wallet.chain,
     walletType: wallet.walletType,
     isPrimary: wallet.isPrimary,
@@ -96,13 +123,24 @@ export const Get_Single_User = catchAsync(async (req: Request, res: Response, ne
   
   // Only include reward history for admin or self
   if (isAdmin) {
-    responseData.rewardHistory = user.rewardHistory;
+    responseData.data.rewardHistory = user.rewardHistory;
   }
   
-  res.status(HTTP_STATUS.OK).json({
-    success: true,
-    data: responseData
-  });
+  // Encrypt if needed
+  if (process.env.ENCRYPT_RESPONSES === 'true') {
+    try {
+      const encryptedData = encryptData(responseData);
+      return res.status(HTTP_STATUS.OK).json({
+        encrypted: true,
+        data: encryptedData
+      });
+    } catch (error) {
+      console.error('Encryption error:', error);
+      // Fall back to unencrypted response
+    }
+  }
+  
+  res.status(HTTP_STATUS.OK).json(responseData);
 });
 
 // Get all users with pagination
@@ -125,7 +163,7 @@ export const Get_All_Users = catchAsync(async (req: Request, res: Response, next
     createdAt: user.createdAt
   }));
   
-  res.status(HTTP_STATUS.OK).json({
+  const responseData = {
     success: true,
     data: simplifiedUsers,
     pagination: {
@@ -134,7 +172,23 @@ export const Get_All_Users = catchAsync(async (req: Request, res: Response, next
       pages,
       limit
     }
-  });
+  };
+  
+  // Encrypt if needed
+  if (process.env.ENCRYPT_RESPONSES === 'true') {
+    try {
+      const encryptedData = encryptData(responseData);
+      return res.status(HTTP_STATUS.OK).json({
+        encrypted: true,
+        data: encryptedData
+      });
+    } catch (error) {
+      console.error('Encryption error:', error);
+      // Fall back to unencrypted response
+    }
+  }
+  
+  res.status(HTTP_STATUS.OK).json(responseData);
 });
 
 // Get filtered users (active/deleted) with pagination
@@ -158,7 +212,7 @@ export const Get_Filtered_Users = catchAsync(async (req: Request, res: Response,
     createdAt: user.createdAt
   }));
   
-  res.status(HTTP_STATUS.OK).json({
+  const responseData = {
     success: true,
     filter: status,
     data: simplifiedUsers,
@@ -168,7 +222,23 @@ export const Get_Filtered_Users = catchAsync(async (req: Request, res: Response,
       pages,
       limit
     }
-  });
+  };
+  
+  // Encrypt if needed
+  if (process.env.ENCRYPT_RESPONSES === 'true') {
+    try {
+      const encryptedData = encryptData(responseData);
+      return res.status(HTTP_STATUS.OK).json({
+        encrypted: true,
+        data: encryptedData
+      });
+    } catch (error) {
+      console.error('Encryption error:', error);
+      // Fall back to unencrypted response
+    }
+  }
+  
+  res.status(HTTP_STATUS.OK).json(responseData);
 });
 
 

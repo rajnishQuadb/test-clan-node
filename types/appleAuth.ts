@@ -1,7 +1,6 @@
 import { Request } from 'express';
 
 export interface AppleUserDTO {
-  id?: string;
   appleId: string;
   email: string;
   name: string;

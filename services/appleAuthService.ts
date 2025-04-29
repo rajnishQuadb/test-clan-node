@@ -1,7 +1,6 @@
 import jwt from 'jsonwebtoken';
 import jwksClient from 'jwks-rsa';
 import { promisify } from 'util';
-import appleAuthRepository from '../repositories/appleAuthRepository';
 import { AppleTokenPayload, AppleUserDTO } from '../types/appleAuth';
 import { AppError } from '../utils/error-handler';
 import { HTTP_STATUS } from '../constants/http-status';
@@ -47,42 +46,18 @@ class AppleAuthService {
         throw new AppError('Missing required user information', HTTP_STATUS.BAD_REQUEST);
       }
       
-      // Check if user already exists
-      let user = await appleAuthRepository.findByEmail(email);
+      // Create user object but don't save to DB
+      const user: AppleUserDTO = {
+        appleId: sub,
+        email,
+        name: name || 'Apple User', // Default name if not provided
+        picture,
+        emailVerified: !!email_verified
+      };
       
-      if (!user) {
-        // Create new user
-        user = await appleAuthRepository.createUser({
-          appleId: sub,
-          email,
-          name: name || 'Apple User', // Default name if not provided
-          picture,
-          emailVerified: !!email_verified
-        });
-      } else {
-        // Update existing user details if needed
-        const updateData: Partial<AppleUserDTO> = {};
-        
-        if (name && name !== user.name) {
-          updateData.name = name;
-        }
-        
-        if (picture && picture !== user.picture) {
-          updateData.picture = picture;
-        }
-        
-        if (!user.appleId) {
-          updateData.appleId = sub;
-        }
-        
-        if (Object.keys(updateData).length > 0) {
-          user = await appleAuthRepository.updateUser(user.id!, updateData) || user;
-        }
-      }
-      
-      // Generate JWT tokens - but don't store them
-      const accessToken = this.generateAccessToken(user.id!, user.email);
-      const refreshToken = this.generateRefreshToken(user.id!, user.email);
+      // Generate JWT tokens
+      const accessToken = this.generateAccessToken(sub, email);
+      const refreshToken = this.generateRefreshToken(sub, email);
       
       return { user, accessToken, refreshToken };
     } catch (error) {

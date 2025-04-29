@@ -124,7 +124,8 @@ export const googleCallback = catchAsync(async (req: Request, res: Response, nex
   res.send(html);
 });
 
-// Verify Google ID token and authenticate user
+
+// Verify Google ID token and return user data
 export const googleVerify = catchAsync(async (req: GoogleAuthRequest, res: Response, next: NextFunction) => {
   const authorizationHeader = req.headers.authorization;
   const idToken = authorizationHeader && authorizationHeader.startsWith('Bearer') 
@@ -144,7 +145,7 @@ export const googleVerify = catchAsync(async (req: GoogleAuthRequest, res: Respo
   const responseData = {
     success: true,
     user: {
-      id: user.id,
+      googleId: user.googleId,
       email: user.email,
       name: user.name,
       picture: user.picture
