@@ -18,6 +18,8 @@ import passport from 'passport';
 import session from 'express-session';
 import twitterAuthRoutes from './routes/twitterAuthRoutes';
 import path from 'path';
+import campaignRoutes from './routes/campaignRoutes';
+import './models/types';
 import './models/User';
 import './models/Campaign';
 import './models/CampaignLeaderBoard';
@@ -78,6 +80,8 @@ app.use('/api/user', userRoutes);
 app.use('/api/auth', googleAuthRoutes);
 // Register Apple auth routes
 app.use('/api/auth', appleAuthRoutes);
+
+app.use('/api/campaign', campaignRoutes);
 
 // Not found middleware
 app.use((req: Request, res: Response, next: NextFunction) => {
