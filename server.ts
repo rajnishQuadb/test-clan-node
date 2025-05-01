@@ -18,7 +18,6 @@ import session from 'express-session';
 import twitterAuthRoutes from './routes/twitterAuthRoutes';
 import path from 'path';
 import clanRoutes from './routes/clansRoutes';
-
 // Load env vars
 dotenv.config();
 
