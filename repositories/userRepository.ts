@@ -291,6 +291,7 @@ class UserRepository {
     referralCode: string;
     joinedAt: Date;
     rewardGiven: boolean;
+    tweetId: string;
   }) {
     return Referral.create(data);
   }
