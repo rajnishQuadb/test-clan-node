@@ -177,7 +177,6 @@ async updateUserWeb(id: string, userData: {
     }
   private mapToDTO(user: TwitterUser): TwitterUserDTO {
     return {
-      id: user.id,
       twitterId: user.twitterId,
       username: user.username,
       displayName: user.displayName,

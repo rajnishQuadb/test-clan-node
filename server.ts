@@ -18,7 +18,6 @@ import session from 'express-session';
 import twitterAuthRoutes from './routes/twitterAuthRoutes';
 import path from 'path';
 import clanRoutes from './routes/clansRoutes';
-import twitterPostRoutes from './routes/twitterPostRoutes';
 // Load env vars
 dotenv.config();
 
@@ -48,7 +47,6 @@ app.use(passport.session());
 // Register Twitter auth routes
 app.use('/api/auth', twitterAuthRoutes);
 
-app.use('/api/twitter', twitterPostRoutes);
 // Serve static HTML pages
 app.get('/privacyPolicy', (req, res) => {
   res.sendFile(path.join(__dirname, 'htmlPages/privacyPolicy.html'));

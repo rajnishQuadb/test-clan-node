@@ -1,5 +1,13 @@
 import { Router } from 'express';
-import { twitterLogin, twitterCallback, twitterTestAuth, twitterCallbackWeb } from '../controllers/twitterAuthController';
+import { 
+  twitterLogin, 
+  twitterCallback, 
+  twitterTestAuth,
+  refreshTwitterToken,
+  postTweet,
+  directTweet
+} from '../controllers/twitterAuthController';
+import  {protect}  from '../middleware/auth';
 
 const router = Router();
 
@@ -9,9 +17,14 @@ router.get('/twitter', twitterLogin);
 // Callback route for Twitter OAuth
 router.get('/twitter/callback', twitterCallback);
 
+// Refresh Twitter token
+router.post('/twitter/refresh', refreshTwitterToken);
+
 // Test route - only available in development
 router.post('/twitter/test', twitterTestAuth);
 
-router.get('/twitter/WebCallback', twitterCallbackWeb);
+router.post('/twitter/tweet', protect, postTweet);
+
+router.post('/twitter/direct-tweet', directTweet);
 
 export default router;
