@@ -1,4 +1,4 @@
-import TwitterPostRepository from "../repositories/twitterPostRepository";
+import TwitterPostRepository from '../repositories/twitterPostRepository';
 import { AppError } from '../utils/error-handler';
 import axios from 'axios';
 import FormData from 'form-data';

@@ -4,6 +4,7 @@ import { AppError } from '../utils/error-handler';
 import { HTTP_STATUS } from '../constants/http-status';
 import sequelize  from '../config/db';
 import { User } from '../models/User';
+import jwt from 'jsonwebtoken';
 import { UserSocialHandle } from '../models/UserSocialHandle';
 class UserService {
     // Add this method to your UserService class

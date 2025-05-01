@@ -1,64 +1,64 @@
 import { v4 as uuidv4 } from 'uuid';
-import TwitterUser from '../models/TwitterUser';
+// import TwitterUser from '../models/TwitterUser';
 import UserSocialHandle from '../models/UserSocialHandle';
 import User from '../models/User';
 import { TwitterUserDTO } from '../types/twitterAuth';
 
 class TwitterAuthRepository {
-  async findByTwitterId(twitterId: string): Promise<TwitterUserDTO | null> {
-    try {
-      const user = await TwitterUser.findOne({ where: { twitterId } });
-      if (!user) return null;
+  // async findByTwitterId(twitterId: string): Promise<TwitterUserDTO | null> {
+  //   try {
+  //     const user = await TwitterUser.findOne({ where: { twitterId } });
+  //     if (!user) return null;
       
-      return this.mapToDTO(user);
-    } catch (error) {
-      console.error('Error in findByTwitterId:', error);
-      throw error;
-    }
-  }
+  //     return this.mapToDTO(user);
+  //   } catch (error) {
+  //     console.error('Error in findByTwitterId:', error);
+  //     throw error;
+  //   }
+  // }
   
-  async findByUsername(username: string): Promise<TwitterUserDTO | null> {
-    try {
-      const user = await TwitterUser.findOne({ where: { username } });
-      if (!user) return null;
+  // async findByUsername(username: string): Promise<TwitterUserDTO | null> {
+  //   try {
+  //     const user = await TwitterUser.findOne({ where: { username } });
+  //     if (!user) return null;
       
-      return this.mapToDTO(user);
-    } catch (error) {
-      console.error('Error in findByUsername:', error);
-      throw error;
-    }
-  }
+  //     return this.mapToDTO(user);
+  //   } catch (error) {
+  //     console.error('Error in findByUsername:', error);
+  //     throw error;
+  //   }
+  // }
   
-  async createUser(userData: TwitterUserDTO): Promise<TwitterUserDTO> {
-    try {
-      const user = await TwitterUser.create({
-        id: uuidv4(),
-        twitterId: userData.twitterId,
-        username: userData.username,
-        displayName: userData.displayName,
-        email: userData.email,
-        profilePicture: userData.profilePicture
-      });
+  // async createUser(userData: TwitterUserDTO): Promise<TwitterUserDTO> {
+  //   try {
+  //     const user = await TwitterUser.create({
+  //       id: uuidv4(),
+  //       twitterId: userData.twitterId,
+  //       username: userData.username,
+  //       displayName: userData.displayName,
+  //       email: userData.email,
+  //       profilePicture: userData.profilePicture
+  //     });
       
-      return this.mapToDTO(user);
-    } catch (error) {
-      console.error('Error in createUser:', error);
-      throw error;
-    }
-  }
+  //     return this.mapToDTO(user);
+  //   } catch (error) {
+  //     console.error('Error in createUser:', error);
+  //     throw error;
+  //   }
+  // }
   
-  async updateUser(id: string, userData: Partial<TwitterUserDTO>): Promise<TwitterUserDTO | null> {
-    try {
-      const user = await TwitterUser.findByPk(id);
-      if (!user) return null;
+  // async updateUser(id: string, userData: Partial<TwitterUserDTO>): Promise<TwitterUserDTO | null> {
+  //   try {
+  //     const user = await TwitterUser.findByPk(id);
+  //     if (!user) return null;
       
-      await user.update(userData);
-      return this.mapToDTO(user);
-    } catch (error) {
-      console.error('Error in updateUser:', error);
-      throw error;
-    }
-  }
+  //     await user.update(userData);
+  //     return this.mapToDTO(user);
+  //   } catch (error) {
+  //     console.error('Error in updateUser:', error);
+  //     throw error;
+  //   }
+  // }
   // New function to find social handle by socialId (Twitter ID)
   async findBySocialId(socialId: string): Promise<UserSocialHandle | null> {
     try {
@@ -175,15 +175,15 @@ async updateUserWeb(id: string, userData: {
         throw error;
       }
     }
-  private mapToDTO(user: TwitterUser): TwitterUserDTO {
-    return {
-      twitterId: user.twitterId,
-      username: user.username,
-      displayName: user.displayName,
-      email: user.email,
-      profilePicture: user.profilePicture
-    };
-  }
+  // private mapToDTO(user: TwitterUser): TwitterUserDTO {
+  //   return {
+  //     twitterId: user.twitterId,
+  //     username: user.username,
+  //     displayName: user.displayName,
+  //     email: user.email,
+  //     profilePicture: user.profilePicture
+  //   };
+  // }
 }
 
 export default new TwitterAuthRepository();

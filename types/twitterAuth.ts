@@ -55,9 +55,9 @@ export interface TwitterTokens {
   tokenSecret: string;
 }
 
-export interface TwitterAuthRequest extends Request {
-  user?: TwitterUserDTO;
-}
+// export interface TwitterAuthRequest extends Request {
+//   user?: TwitterUserDTO;
+// }
 
 export interface TwitterTokenResponse {
   token_type: string;
