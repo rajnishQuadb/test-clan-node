@@ -132,21 +132,6 @@ class UserService {
 
     // Save the updated user
     await userRepository.saveUser(user);
-    if (referralCode) {
-      const referrer = await userRepository.findUserByReferralCode(referralCode);
-
-      if (!referrer) {
-        throw new AppError('Invalid referral code', 400);
-      }
-
-      await userRepository.createReferral({
-        referrerUserId: referrer.userId,
-        referredUserId: user.userId,
-        referralCode: referralCode,
-        joinedAt: new Date(),
-        rewardGiven: false
-      });
-    }
     return user;
   }
 

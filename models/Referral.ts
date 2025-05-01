@@ -9,6 +9,7 @@ interface ReferralAttributes {
   referralCode?: string;       // Optional referral code
   joinedAt?: Date;             // When referred user joined
   rewardGiven?: boolean;       // If reward is given
+  tweetId?: string;        
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -24,6 +25,7 @@ export class Referral extends Model<ReferralAttributes, ReferralCreationAttribut
   public referralCode?: string;
   public joinedAt?: Date;
   public rewardGiven?: boolean;
+  public tweetId?: string;  
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
 }
@@ -47,7 +49,6 @@ Referral.init(
     referralCode: {
       type: DataTypes.STRING(10),
       allowNull: true,
-      unique: true
     },
     joinedAt: {
       type: DataTypes.DATE,
@@ -56,6 +57,10 @@ Referral.init(
     rewardGiven: {
       type: DataTypes.BOOLEAN,
       defaultValue: false
+    },
+    tweetId: {
+      type: DataTypes.STRING,
+      allowNull: true
     }
   },
   {

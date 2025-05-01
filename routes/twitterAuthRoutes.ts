@@ -4,8 +4,6 @@ import {
   twitterCallback, 
   twitterTestAuth,
   refreshTwitterToken,
-  postTweet,
-  directTweet
 } from '../controllers/twitterAuthController';
 import  {protect}  from '../middleware/auth';
 
@@ -23,8 +21,7 @@ router.post('/twitter/refresh', refreshTwitterToken);
 // Test route - only available in development
 router.post('/twitter/test', twitterTestAuth);
 
-router.post('/twitter/tweet', protect, postTweet);
 
-router.post('/twitter/direct-tweet', directTweet);
+
 
 export default router;
