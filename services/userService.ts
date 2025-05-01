@@ -4,6 +4,12 @@ import { AppError } from '../utils/error-handler';
 import { HTTP_STATUS } from '../constants/http-status';
 import jwt from 'jsonwebtoken';
 
+// At the top of your userService.ts file:
+import { User } from '../models/User';
+import { UserSocialHandle } from '../models/UserSocialHandle';
+import sequelize  from '../config/db';
+
+
 class UserService {
     // Add this method to your UserService class
     generateToken(userId: string): string {
@@ -117,6 +123,108 @@ class UserService {
       throw new AppError('Failed to fetch filtered users', HTTP_STATUS.INTERNAL_SERVER_ERROR);
     }
   }
+
+  // Add this method to your UserService class
+async findOrCreateUserBySocialId(
+  provider: string, 
+  socialId: string, 
+  userData: {
+    socialId: string;
+    username: string;
+    displayName: string;
+    email?: string;
+    profilePicture?: string;
+    twitterAccessToken?: string;
+    twitterRefreshToken?: string;
+  }
+): Promise<{ userId: string; isNewUser: boolean }> {
+  try {
+    // Check if a social handle with this provider and ID exists
+    const existingSocialHandle = await UserSocialHandle.findOne({
+      where: {
+        provider,
+        socialId
+      },
+      include: [{
+        model: User,
+        as: 'user'
+      }]
+    });
+
+    // If user exists, update the tokens and return the user
+    if (existingSocialHandle && existingSocialHandle.user) {
+      // Update tokens if they've changed
+      if (provider === 'twitter' && userData.twitterAccessToken) {
+        await existingSocialHandle.update({
+          username: userData.username,
+          displayName: userData.displayName,
+          profilePicture: userData.profilePicture || existingSocialHandle.profilePicture
+        });
+        
+        // Store encrypted tokens if user service has access to User model
+        const user = existingSocialHandle.user;
+        if (userData.twitterAccessToken) {
+          user.twitterAccessToken = userData.twitterAccessToken;
+        }
+        if (userData.twitterRefreshToken) {
+          user.twitterRefreshToken = userData.twitterRefreshToken;
+        }
+        await user.save();
+      }
+      
+      return {
+        userId: existingSocialHandle.user.userId,
+        isNewUser: false
+      };
+    }
+
+    // User doesn't exist, create a new user and social handle
+    // Generate a unique web3 username if one doesn't exist
+    const web3UserName = userData.username || `${provider}_${socialId.substring(0, 8)}`;
+    
+    // Create transaction to ensure both user and social handle are created
+    const transaction = await sequelize.transaction();
+    
+    try {
+      // Create new user
+      const newUser = await User.create({
+        web3UserName,
+        DiD: `did:${provider}:${socialId}`,
+        isEarlyUser: false,
+        isActiveUser: true,
+        // Add twitter tokens if twitter provider
+        ...(provider === 'twitter' && userData.twitterAccessToken ? {
+          twitterAccessToken: userData.twitterAccessToken,
+          twitterRefreshToken: userData.twitterRefreshToken
+        } : {})
+      }, { transaction });
+
+      // Create social handle linked to user
+      await UserSocialHandle.create({
+        userId: newUser.userId,
+        provider,
+        socialId: userData.socialId,
+        username: userData.username,
+        email: userData.email,
+        displayName: userData.displayName,
+        profilePicture: userData.profilePicture
+      }, { transaction });
+
+      await transaction.commit();
+
+      return {
+        userId: newUser.userId,
+        isNewUser: true
+      };
+    } catch (error) {
+      await transaction.rollback();
+      throw error;
+    }
+  } catch (error) {
+    console.error('Error in findOrCreateUserBySocialId:', error);
+    throw new AppError('Failed to find or create user', HTTP_STATUS.INTERNAL_SERVER_ERROR);
+  }
+}
 }
 
 export default new UserService();

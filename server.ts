@@ -45,14 +45,25 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 });
 
 // Configure session and passport
+// app.use(session({
+//   secret: process.env.SESSION_SECRET || 'twitter-auth-secret',
+//   resave: false,
+//   saveUninitialized: false,
+//   cookie: { secure: process.env.NODE_ENV === 'production' }
+// }));
+
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'twitter-auth-secret',
+  secret: process.env.SESSION_SECRET || 'your-secret-key',
   resave: false,
   saveUninitialized: false,
-  cookie: { secure: process.env.NODE_ENV === 'production' }
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 60 * 60 * 1000 // 1 hour
+  }
 }));
-app.use(passport.initialize());
-app.use(passport.session());
+
+// app.use(passport.initialize());
+// app.use(passport.session());
 
 // Register Twitter auth routes
 app.use('/api/auth', twitterAuthRoutes);
