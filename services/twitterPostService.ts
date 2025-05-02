@@ -37,7 +37,7 @@ class TwitterPostService {
       console.log("Tweet response:", tweetResponse);
 
       if (tweetResponse.error) {
-        throw new AppError("Failed to post tweet on Twitter", HTTP_STATUS.BAD_REQUEST);
+        throw new Error(tweetResponse.error.detail);
       }
 
       // Step 4: If tweet posted and referral code exists, log referral
@@ -59,7 +59,9 @@ class TwitterPostService {
 
       return { tweetResponse, referralCode };
     } catch (error: unknown) {
-      if (error instanceof Error) {
+      if (error instanceof AppError) {
+        throw error; // rethrow custom app errors
+      }else if (error instanceof Error) {
         console.error("Error posting tweet and processing referral:", error);
         throw new AppError(error.message || "Internal Server Error", HTTP_STATUS.INTERNAL_SERVER_ERROR);
       } else {

@@ -28,7 +28,7 @@ class TwitterPostService {
             const tweetResponse = await twitterPostRepository_1.default.postToTwitter(text, twitterAccessToken, twitterRefreshToken, mediaId);
             console.log("Tweet response:", tweetResponse);
             if (tweetResponse.error) {
-                throw new error_handler_1.AppError("Failed to post tweet on Twitter", http_status_1.HTTP_STATUS.BAD_REQUEST);
+                throw new Error(tweetResponse.error.detail);
             }
             // Step 4: If tweet posted and referral code exists, log referral
             if (tweetResponse?.data?.id && referralCode) {
@@ -48,7 +48,10 @@ class TwitterPostService {
             return { tweetResponse, referralCode };
         }
         catch (error) {
-            if (error instanceof Error) {
+            if (error instanceof error_handler_1.AppError) {
+                throw error; // rethrow custom app errors
+            }
+            else if (error instanceof Error) {
                 console.error("Error posting tweet and processing referral:", error);
                 throw new error_handler_1.AppError(error.message || "Internal Server Error", http_status_1.HTTP_STATUS.INTERNAL_SERVER_ERROR);
             }
