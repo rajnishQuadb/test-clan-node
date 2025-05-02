@@ -64,6 +64,9 @@ class TwitterAuthService {
                 console.error('Twitter API error details:', error.response.data);
                 throw new error_handler_1.AppError(`Twitter API error: ${error.response.data.title || error.response.data.detail || 'Unknown error'}`, error.response.data.status || http_status_1.HTTP_STATUS.INTERNAL_SERVER_ERROR);
             }
+            if (error instanceof error_handler_1.AppError) {
+                throw error; // rethrow custom app errors
+            }
             throw new error_handler_1.AppError('Failed to exchange authorization code for tokens', http_status_1.HTTP_STATUS.INTERNAL_SERVER_ERROR);
         }
     }
@@ -115,6 +118,9 @@ class TwitterAuthService {
             if (error.isAxiosError && error.response) {
                 console.error('Twitter API error details userInfo:', error.response.data);
                 throw new error_handler_1.AppError(`Twitter API error: ${error.response.data.title || error.response.data.detail || 'Unknown error'}`, error.response.data.status || http_status_1.HTTP_STATUS.INTERNAL_SERVER_ERROR);
+            }
+            if (error instanceof error_handler_1.AppError) {
+                throw error; // rethrow custom app errors
             }
             throw new error_handler_1.AppError('Failed to get user info from Twitter', http_status_1.HTTP_STATUS.INTERNAL_SERVER_ERROR);
         }
@@ -187,6 +193,9 @@ class TwitterAuthService {
         }
         catch (error) {
             console.error('Twitter callback error:', error);
+            if (error instanceof error_handler_1.AppError) {
+                throw error; // rethrow custom app errors
+            }
             throw new error_handler_1.AppError('Failed to handle Twitter callback', http_status_1.HTTP_STATUS.INTERNAL_SERVER_ERROR);
         }
     }

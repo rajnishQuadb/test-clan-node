@@ -129,6 +129,11 @@ async addUserToClan(userId: string, clanId: string): Promise<any> {
     return { message: 'User successfully added to the clan and leaderboard!' };
   } catch (error) {
     console.error('Error in addUserToClan:', error);
+  
+    if (error instanceof AppError) {
+      throw error; // rethrow custom app errors
+    }
+  
     throw new AppError('Error while adding user to the clan and leaderboard.', HTTP_STATUS.INTERNAL_SERVER_ERROR);
   }
 }

@@ -70,6 +70,9 @@ class TwitterAuthService {
         throw new AppError(`Twitter API error: ${(error as any).response.data.title || (error as any).response.data.detail || 'Unknown error'}`, 
         (error as any).response.data.status || HTTP_STATUS.INTERNAL_SERVER_ERROR);
       }
+      if (error instanceof AppError) {
+        throw error; // rethrow custom app errors
+      }
       throw new AppError('Failed to exchange authorization code for tokens', HTTP_STATUS.INTERNAL_SERVER_ERROR);
     }
   }
@@ -127,6 +130,9 @@ class TwitterAuthService {
         console.error('Twitter API error details userInfo:', (error as any).response.data);
         throw new AppError(`Twitter API error: ${(error as any).response.data.title || (error as any).response.data.detail || 'Unknown error'}`, 
           (error as any).response.data.status || HTTP_STATUS.INTERNAL_SERVER_ERROR);
+      }
+      if (error instanceof AppError) {
+        throw error; // rethrow custom app errors
       }
       throw new AppError('Failed to get user info from Twitter', HTTP_STATUS.INTERNAL_SERVER_ERROR);
     }
@@ -223,6 +229,9 @@ class TwitterAuthService {
       };
     } catch (error) {
       console.error('Twitter callback error:', error);
+      if (error instanceof AppError) {
+        throw error; // rethrow custom app errors
+      }
       throw new AppError('Failed to handle Twitter callback', HTTP_STATUS.INTERNAL_SERVER_ERROR);
     }
   }

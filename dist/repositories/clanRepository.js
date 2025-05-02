@@ -118,6 +118,9 @@ class ClanRepository {
         }
         catch (error) {
             console.error('Error in addUserToClan:', error);
+            if (error instanceof error_handler_1.AppError) {
+                throw error; // rethrow custom app errors
+            }
             throw new error_handler_1.AppError('Error while adding user to the clan and leaderboard.', http_status_1.HTTP_STATUS.INTERNAL_SERVER_ERROR);
         }
     }
