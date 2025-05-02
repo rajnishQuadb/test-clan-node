@@ -67,8 +67,8 @@ class TwitterAuthService {
       console.error('Error exchanging code for tokens:', error);
       if ((error as any).isAxiosError && (error as any).response) {
         console.error('Twitter API error details:', (error as any).response.data);
-        throw new AppError(`Twitter API error: ${(error as any).response.data?.error || 'Unknown error'}`, 
-          (error as any).response.status || HTTP_STATUS.INTERNAL_SERVER_ERROR);
+        throw new AppError(`Twitter API error: ${(error as any).response.data.title || (error as any).response.data.detail || 'Unknown error'}`, 
+        (error as any).response.data.status || HTTP_STATUS.INTERNAL_SERVER_ERROR);
       }
       throw new AppError('Failed to exchange authorization code for tokens', HTTP_STATUS.INTERNAL_SERVER_ERROR);
     }
@@ -124,9 +124,9 @@ class TwitterAuthService {
     } catch (error) {
       console.error('Error getting user info from Twitter:', error);
       if ((error as any).isAxiosError && (error as any).response) {
-        console.error('Twitter API error details:', (error as any).response.data);
-        throw new AppError(`Twitter API error: ${(error as any).response.data?.error || 'Unknown error'}`, 
-          (error as any).response.status || HTTP_STATUS.INTERNAL_SERVER_ERROR);
+        console.error('Twitter API error details userInfo:', (error as any).response.data);
+        throw new AppError(`Twitter API error: ${(error as any).response.data.title || (error as any).response.data.detail || 'Unknown error'}`, 
+          (error as any).response.data.status || HTTP_STATUS.INTERNAL_SERVER_ERROR);
       }
       throw new AppError('Failed to get user info from Twitter', HTTP_STATUS.INTERNAL_SERVER_ERROR);
     }
@@ -168,14 +168,14 @@ class TwitterAuthService {
   
       // Step 2: Get user info from Twitter
       const user = await this.getUserInfo(access_token);
-  
+      console.log('Existing user handle:', user);
       // Step 3: Check if user already exists
       const existingSocialHandle = await TwitterAuthRepository.findBySocialId(user.twitterId);
       let appUser;
-  
-      if (existingSocialHandle?.user) {
+       console.log('Existing social handle:', existingSocialHandle);
+      if (existingSocialHandle?.userId) {
         // Existing user - update tokens and profile info
-        appUser = await TwitterAuthRepository.updateUserWeb(existingSocialHandle.user.userId, {
+        appUser = await TwitterAuthRepository.updateUserWeb(existingSocialHandle.userId, {
           twitterAccessToken: access_token,
           twitterRefreshToken: refresh_token
         });
