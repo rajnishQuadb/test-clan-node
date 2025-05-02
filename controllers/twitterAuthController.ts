@@ -36,40 +36,59 @@ export const twitterLogin = catchAsync(async (req: Request, res: Response, next:
 // Handle Twitter OAuth callback
 export const twitterCallback = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
   const { code, state } = req.query;
-  
+
   // Verify state parameter to prevent CSRF attacks
   if (!state || state !== req.session.twitterState) {
     throw new AppError('Invalid state parameter', HTTP_STATUS.BAD_REQUEST);
   }
-  
+
   if (!code || typeof code !== 'string') {
     throw new AppError('No authorization code provided', HTTP_STATUS.BAD_REQUEST);
   }
-  
+
   // Process OAuth callback
   const { user, accessToken, refreshToken, twitterTokens } = await TwitterAuthService.handleTwitterCallback(code);
-  
-  
-  // Prepare response
+
+  // Look up the user's ID from the UserSocialHandle table
+  let userId = null;
+  try {
+    // Find the UserSocialHandle entry for this Twitter ID
+    const socialHandle = await UserSocialHandle.findOne({
+      where: { 
+        provider: 'twitter', 
+        socialId: user.twitterId 
+      }
+    });
+
+    if (socialHandle) {
+      userId = socialHandle.userId;
+    } else {
+      console.log('No UserSocialHandle found for Twitter ID:', user.twitterId);
+    }
+  } catch (error) {
+    console.error('Error finding UserSocialHandle:', error);
+  }
+
+  // Prepare response with userId included
   const responseData = {
     success: true,
     user: {
+      userId: userId, // Include the userId in the response
       twitterId: user.twitterId,
       username: user.username,
       displayName: user.displayName,
       email: user.email,
       profilePicture: user.profilePicture,
-
     },
     access_token: accessToken,
     refresh_token: refreshToken,
-    twitter_tokens: {                 // Add this!
+    twitter_tokens: {
       access_token: twitterTokens.access_token,
       refresh_token: twitterTokens.refresh_token,
       expires_in: twitterTokens.expires_in
     }
   };
-  
+
   // Encrypt if needed
   if (process.env.ENCRYPT_RESPONSES === 'true') {
     try {
@@ -83,8 +102,8 @@ export const twitterCallback = catchAsync(async (req: Request, res: Response, ne
       // Fall back to unencrypted response
     }
   }
-  
-  res.status(HTTP_STATUS.OK).json(responseData);
+  res.redirect(`https://clans-landing.10on10studios.com/startRoaring/${userId}`);
+  // res.status(HTTP_STATUS.OK).json(responseData);
 });
 
 // For testing only

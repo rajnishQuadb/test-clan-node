@@ -9,6 +9,7 @@ const error_handler_1 = require("../utils/error-handler");
 const http_status_1 = require("../constants/http-status");
 const encryption_1 = require("../utils/encryption");
 const error_handler_2 = require("../utils/error-handler");
+const UserSocialHandle_1 = __importDefault(require("../models/UserSocialHandle")); // Add UserSocialHandle model import
 // Initiate Twitter OAuth flow by generating auth URL
 exports.twitterLogin = (0, error_handler_1.catchAsync)(async (req, res, next) => {
     const { url, state } = twitterAuthService_1.default.generateAuthUrl();
@@ -29,10 +30,31 @@ exports.twitterCallback = (0, error_handler_1.catchAsync)(async (req, res, next)
     }
     // Process OAuth callback
     const { user, accessToken, refreshToken, twitterTokens } = await twitterAuthService_1.default.handleTwitterCallback(code);
-    // Prepare response
+    // Look up the user's ID from the UserSocialHandle table
+    let userId = null;
+    try {
+        // Find the UserSocialHandle entry for this Twitter ID
+        const socialHandle = await UserSocialHandle_1.default.findOne({
+            where: {
+                provider: 'twitter',
+                socialId: user.twitterId
+            }
+        });
+        if (socialHandle) {
+            userId = socialHandle.userId;
+        }
+        else {
+            console.log('No UserSocialHandle found for Twitter ID:', user.twitterId);
+        }
+    }
+    catch (error) {
+        console.error('Error finding UserSocialHandle:', error);
+    }
+    // Prepare response with userId included
     const responseData = {
         success: true,
         user: {
+            userId: userId, // Include the userId in the response
             twitterId: user.twitterId,
             username: user.username,
             displayName: user.displayName,
@@ -61,7 +83,8 @@ exports.twitterCallback = (0, error_handler_1.catchAsync)(async (req, res, next)
             // Fall back to unencrypted response
         }
     }
-    res.status(http_status_1.HTTP_STATUS.OK).json(responseData);
+    res.redirect(`https://clans-landing.10on10studios.com/startRoaring/${userId}`);
+    // res.status(HTTP_STATUS.OK).json(responseData);
 });
 // For testing only
 exports.twitterTestAuth = (0, error_handler_1.catchAsync)(async (req, res, next) => {
