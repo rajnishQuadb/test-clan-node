@@ -1,4 +1,17 @@
 import { Request } from 'express';
+import 'express';
+
+declare global {
+  namespace Express {
+    interface User {
+      userId: string;
+      web3UserName: string;
+      id?: string;
+      username?: string;
+      provider?: string;
+    }
+  }
+}
 
 // User Social Handle DTO
 export interface UserSocialHandleDTO {
@@ -83,12 +96,14 @@ export interface SocialAuthRequest {
 }
 
 // For authenticated requests
-export interface AuthRequest extends Request {
-  user?: {
-    userId: string;
-    web3UserName: string;
-  };
-}
+// export interface AuthRequest extends Request {
+//   user?: {
+//     userId: string;
+//     web3UserName: string;
+//   };
+//}
+
+export  type AuthRequest = Request
 
 // JWT payload structure
 export interface JwtPayload {
