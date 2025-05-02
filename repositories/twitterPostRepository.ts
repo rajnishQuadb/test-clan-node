@@ -28,6 +28,10 @@ class TwitterPostRepository {
     accessToken: string
   ): Promise<string> {
     try {
+      if (!media || !media.buffer || !media.originalname || !media.mimetype) {
+        throw new Error("Invalid media file provided");
+      }
+  
       const form = new FormData();
       form.append('media', media.buffer, {
         filename: media.originalname,
@@ -35,7 +39,7 @@ class TwitterPostRepository {
       });
 
       const response = await axios.post(
-        'https://upload.twitter.com/1.1/media/upload.json',
+        'https://api.twitter.com/2/media/upload',
         form,
         {
           headers: {

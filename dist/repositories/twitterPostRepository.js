@@ -27,12 +27,15 @@ class TwitterPostRepository {
     // Upload media to Twitter and return media_id
     async uploadMediaToTwitter(media, accessToken) {
         try {
+            if (!media || !media.buffer || !media.originalname || !media.mimetype) {
+                throw new Error("Invalid media file provided");
+            }
             const form = new form_data_1.default();
             form.append('media', media.buffer, {
                 filename: media.originalname,
                 contentType: media.mimetype
             });
-            const response = await axios_1.default.post('https://upload.twitter.com/1.1/media/upload.json', form, {
+            const response = await axios_1.default.post('https://api.twitter.com/2/media/upload', form, {
                 headers: {
                     ...form.getHeaders(),
                     Authorization: `Bearer ${accessToken}`

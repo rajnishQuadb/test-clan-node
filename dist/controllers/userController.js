@@ -221,8 +221,7 @@ exports.Get_Filtered_Users = (0, error_handler_1.catchAsync)(async (req, res, ne
 // upate user to the early user
 exports.Early_User = (0, error_handler_1.catchAsync)(async (req, res, next) => {
     const { userId } = req.params;
-    const { referralCode } = req.body;
-    const user = await userService_1.default.updateUserToEarlyUser(userId, referralCode);
+    const user = await userService_1.default.updateUserToEarlyUser(userId);
     res.status(http_status_1.HTTP_STATUS.OK).json({
         success: true,
         message: 'User updated to early user successfully',

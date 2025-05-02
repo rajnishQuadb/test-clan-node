@@ -112,7 +112,7 @@ class UserService {
             throw new error_handler_1.AppError('Failed to fetch filtered users', http_status_1.HTTP_STATUS.INTERNAL_SERVER_ERROR);
         }
     }
-    async updateUserToEarlyUser(userId, referralCode) {
+    async updateUserToEarlyUser(userId) {
         const user = await userRepository_1.default.findUserById(userId);
         if (!user) {
             throw new error_handler_1.AppError('User not found', 404);

@@ -9,13 +9,13 @@ import { AppError } from '../utils/error-handler';
 
 export const PostTweet = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     // Get the tweet text, referral code, and token from the request
-    const { text, referralCode, userId, media } = req.body;
-  
+    const { text, referralCode, userId } = req.body;
+    const media = req.file;
     // Validate the input parameters
     if (!text || typeof text !== 'string') {
       throw new AppError('Tweet text is required', HTTP_STATUS.BAD_REQUEST);
     }
-
+console.log("Media:", media);
     try {
       // Post the tweet and handle the referral logic using the service function
       const result = await TwitterPostService.postTweetAndHandleReferral(userId, referralCode, text, media);

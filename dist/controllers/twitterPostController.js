@@ -10,11 +10,13 @@ const http_status_1 = require("../constants/http-status");
 const error_handler_2 = require("../utils/error-handler");
 exports.PostTweet = (0, error_handler_1.catchAsync)(async (req, res, next) => {
     // Get the tweet text, referral code, and token from the request
-    const { text, referralCode, userId, media } = req.body;
+    const { text, referralCode, userId } = req.body;
+    const media = req.file;
     // Validate the input parameters
     if (!text || typeof text !== 'string') {
         throw new error_handler_2.AppError('Tweet text is required', http_status_1.HTTP_STATUS.BAD_REQUEST);
     }
+    console.log("Media:", media);
     try {
         // Post the tweet and handle the referral logic using the service function
         const result = await twitterPostService_1.default.postTweetAndHandleReferral(userId, referralCode, text, media);

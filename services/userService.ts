@@ -120,7 +120,7 @@ class UserService {
     }
   }
 
-  async updateUserToEarlyUser(userId: string, referralCode?: string) {
+  async updateUserToEarlyUser(userId: string) {
 
     const user = await userRepository.findUserById(userId);
 
