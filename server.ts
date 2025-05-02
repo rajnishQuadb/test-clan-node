@@ -25,6 +25,7 @@ import './models/Campaign';
 import './models/CampaignLeaderBoard';
 import './models/CampaignLeaderBoardUser';
 import './models/CampaignParticipant';
+import {createUserLimiter} from './middleware/rateLimiter';
 setupAssociations(); // Call the function to set up all associations
 
 
@@ -81,7 +82,7 @@ app.get('/termsOfService', (req, res) => {
 app.get('/', (req: Request, res: Response) => {
   res.send('CLANS-NODE-APP is running');
 });
-app.get('/api', (req: Request, res: Response) => {
+app.get('/api', createUserLimiter, (req: Request, res: Response) => {
   res.send('CLANS-NODE-APP API is running');
 });
 
