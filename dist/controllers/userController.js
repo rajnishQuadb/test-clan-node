@@ -92,6 +92,7 @@ exports.Get_Single_User = (0, error_handler_1.catchAsync)(async (req, res, next)
             isEarlyUser: user.isEarlyUser,
             activeClanId: user.activeClanId,
             clanJoinDate: user.clanJoinDate,
+            referralCode: user.referralCode,
             createdAt: user.createdAt
         }
     };

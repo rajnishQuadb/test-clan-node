@@ -257,7 +257,8 @@ class UserRepository {
             updatedAt: user.updatedAt,
             socialHandles,
             wallets,
-            rewardHistory
+            rewardHistory,
+            referralCode: user.referralCode
         };
     }
     async findUserById(userId) {

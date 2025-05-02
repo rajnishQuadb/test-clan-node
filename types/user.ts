@@ -52,6 +52,7 @@ export interface UserDTO {
   clanJoinDate?: Date;
   createdAt?: Date;
   updatedAt?: Date;
+  referralCode?: string;
   
   // Related entities
   socialHandles?: UserSocialHandleDTO[];

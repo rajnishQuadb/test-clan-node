@@ -101,6 +101,7 @@ export const Get_Single_User = catchAsync(async (req: Request, res: Response, ne
       isEarlyUser: user.isEarlyUser,
       activeClanId: user.activeClanId,
       clanJoinDate: user.clanJoinDate,
+      referralCode: user.referralCode,
       createdAt: user.createdAt
     }
   };
