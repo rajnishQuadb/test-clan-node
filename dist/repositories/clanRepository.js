@@ -105,12 +105,15 @@ class ClanRepository {
                 ranking: 0, // Default ranking
                 points: 0, // Default points
             });
-            await User_1.default.update({
-                activeClanId: clanId, // Set the user's activeClanId to the current clan
-                clanJoinDate: new Date() // Set the current date as the join date
-            }, {
-                where: { userId } // Target the user by userId
-            });
+            // await User.update(
+            //   { 
+            //     activeClanId: clanId,        // Set the user's activeClanId to the current clan
+            //     clanJoinDate: new Date()      // Set the current date as the join date
+            //   },
+            //   {
+            //     where: { userId }             // Target the user by userId
+            //   }
+            // );
             return { message: 'User successfully added to the clan and leaderboard!' };
         }
         catch (error) {

@@ -115,15 +115,15 @@ async addUserToClan(userId: string, clanId: string): Promise<any> {
       points: 0,      // Default points
     });
 
-    await User.update(
-      { 
-        activeClanId: clanId,        // Set the user's activeClanId to the current clan
-        clanJoinDate: new Date()      // Set the current date as the join date
-      },
-      {
-        where: { userId }             // Target the user by userId
-      }
-    );
+    // await User.update(
+    //   { 
+    //     activeClanId: clanId,        // Set the user's activeClanId to the current clan
+    //     clanJoinDate: new Date()      // Set the current date as the join date
+    //   },
+    //   {
+    //     where: { userId }             // Target the user by userId
+    //   }
+    // );
 
 
     return { message: 'User successfully added to the clan and leaderboard!' };
