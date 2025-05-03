@@ -1,179 +1,3 @@
-
-// import { Request, Response, NextFunction } from 'express';
-// import axios from 'axios';
-// import TwitterAuthService from '../services/twitterAuthService';
-// import { catchAsync } from '../utils/error-handler';
-// import { HTTP_STATUS } from '../constants/http-status';
-// import { encryptData } from '../utils/encryption';
-// import userService from '../services/userService';
-// import { AppError } from '../utils/error-handler';
-// import User from '../models/User'; // Add User model import
-// import UserSocialHandle from '../models/UserSocialHandle'; // Add UserSocialHandle model import
-
-
-// declare global {
-//   namespace Express {
-//     interface ExpressUser extends User {
-//       id: string; // Add the id property to the existing User type
-//     }
-
-//     interface User {
-//       id?: string; // Ensure the 'id' property is optional on the User type
-//     }
-//   }
-// }
-
-// // Initiate Twitter OAuth flow by generating auth URL
-// export const twitterLogin = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-//   const { url, state } = TwitterAuthService.generateAuthUrl();
-  
-//   // Store state in session/cookie for CSRF protection verification
-//   req.session.twitterState = state;
-//   res.redirect(url);
-//   // res.status(HTTP_STATUS.OK).json({ url });
-// });
-
-// // Handle Twitter OAuth callback
-// export const twitterCallback = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-//   const { code, state } = req.query;
-
-//   // Verify state parameter to prevent CSRF attacks
-//   if (!state || state !== req.session.twitterState) {
-//     throw new AppError('Invalid state parameter', HTTP_STATUS.BAD_REQUEST);
-//   }
-
-//   if (!code || typeof code !== 'string') {
-//     throw new AppError('No authorization code provided', HTTP_STATUS.BAD_REQUEST);
-//   }
-
-//   // Process OAuth callback
-//   const { user, accessToken, refreshToken, twitterTokens } = await TwitterAuthService.handleTwitterCallback(code);
-
-//   // Look up the user's ID from the UserSocialHandle table
-//   let userId = null;
-//   try {
-//     // Find the UserSocialHandle entry for this Twitter ID
-//     const socialHandle = await UserSocialHandle.findOne({
-//       where: { 
-//         provider: 'twitter', 
-//         socialId: user.twitterId 
-//       }
-//     });
-
-//     if (socialHandle) {
-//       userId = socialHandle.userId;
-//     } else {
-//       console.log('No UserSocialHandle found for Twitter ID:', user.twitterId);
-//     }
-//   } catch (error) {
-//     console.error('Error finding UserSocialHandle:', error);
-//   }
-
-//   // Prepare response with userId included
-//   const responseData = {
-//     success: true,
-//     user: {
-//       userId: userId, // Include the userId in the response
-//       twitterId: user.twitterId,
-//       username: user.username,
-//       displayName: user.displayName,
-//       email: user.email,
-//       profilePicture: user.profilePicture,
-//     },
-//     access_token: accessToken,
-//     refresh_token: refreshToken,
-//     twitter_tokens: {
-//       access_token: twitterTokens.access_token,
-//       refresh_token: twitterTokens.refresh_token,
-//       expires_in: twitterTokens.expires_in
-//     }
-//   };
-
-//   // Encrypt if needed
-//   if (process.env.ENCRYPT_RESPONSES === 'true') {
-//     try {
-//       const encryptedData = encryptData(responseData);
-//       return res.status(HTTP_STATUS.OK).json({
-//         encrypted: true,
-//         data: encryptedData
-//       });
-//     } catch (error) {
-//       console.error('Encryption error:', error);
-//       // Fall back to unencrypted response
-//     }
-//   }
-//   res.redirect(`https://clans-landing.10on10studios.com/startRoaring/${userId}`);
-//   // res.status(HTTP_STATUS.OK).json(responseData);
-// });
-
-// // For testing only
-// export const twitterTestAuth = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-//   if (process.env.NODE_ENV !== 'development') {
-//     return res.status(HTTP_STATUS.NOT_FOUND).json({
-//       success: false,
-//       message: 'Endpoint not available in production'
-//     });
-//   }
-  
-//   const mockData = {
-//     twitterId: req.body.twitterId || '123456789',
-//     username: req.body.username || 'test_twitter_user',
-//     displayName: req.body.displayName || 'Test Twitter User',
-//     email: req.body.email,
-//     profilePicture: req.body.profilePicture || 'https://example.com/default-twitter.png'
-//   };
-  
-//   const { user, accessToken, refreshToken } = await TwitterAuthService.testMockAuth(mockData);
-  
-//   // Prepare response
-//   const responseData = {
-//     success: true,
-//     user: {
-//       twitterId: user.twitterId,
-//       username: user.username,
-//       displayName: user.displayName,
-//       email: user.email,
-//       profilePicture: user.profilePicture
-//     },
-//     access_token: accessToken,
-//     refresh_token: refreshToken
-//   };
-  
-//   // Encrypt if needed
-//   if (process.env.ENCRYPT_RESPONSES === 'true') {
-//     try {
-//       const encryptedData = encryptData(responseData);
-//       return res.status(HTTP_STATUS.OK).json({
-//         encrypted: true,
-//         data: encryptedData
-//       });
-//     } catch (error) {
-//       console.error('Encryption error:', error);
-//       // Fall back to unencrypted response
-//     }
-//   }
-  
-//   res.status(HTTP_STATUS.OK).json(responseData);
-// });
-
-// // Refresh Twitter access token
-// export const refreshTwitterToken = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-//   const { refresh_token } = req.body;
-  
-//   if (!refresh_token) {
-//     throw new AppError('Refresh token is required', HTTP_STATUS.BAD_REQUEST);
-//   }
-  
-//   const tokens = await TwitterAuthService.refreshAccessToken(refresh_token);
-  
-//   res.status(HTTP_STATUS.OK).json({
-//     success: true,
-//     ...tokens
-//   });
-// });
-
-
-
 import { Request, Response, NextFunction } from 'express';
 import { TwitterApi } from 'twitter-api-v2';
 import { catchAsync } from '../utils/error-handler';
@@ -225,6 +49,9 @@ export const twitterCallbackV2 = catchAsync(async (req: Request, res: Response, 
     throw new AppError('Missing OAuth parameters', HTTP_STATUS.BAD_REQUEST);
   }
 
+  console.log("OAuth Token : ", oauth_token);
+  console.log("OAuth Verifier : ", oauth_verifier);
+
   const tempToken = oauth_token as string;
   const verifier = oauth_verifier as string;
   const stored = temporaryTokenStore.get(tempToken);
@@ -271,7 +98,7 @@ export const twitterCallbackV2 = catchAsync(async (req: Request, res: Response, 
 
 // Test endpoint to tweet
 export const postTweet = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-  const { userId, text, mediaId , referralCode} = req.body;
+  const { userId, text, mediaId, referralCode } = req.body;
   console.log("Received request to post tweet:", { userId, text, mediaId });
 
   if (!userId || !text) {
@@ -279,11 +106,35 @@ export const postTweet = catchAsync(async (req: Request, res: Response, next: Ne
   }
 
   try {
-    const tweet = await TwitterAuthV2Service.postTweet(userId, text, mediaId , referralCode);
-    res.status(HTTP_STATUS.CREATED).json({
-      success: true,
-      tweet
-    });
+    const tweetResponse = await TwitterAuthV2Service.postTweet(userId, text, mediaId, referralCode);
+    
+    // Print the entire tweet response to console
+    console.log("Twitter API Response:", JSON.stringify(tweetResponse, null, 2));
+    
+    // Check if redirectUrl is provided in the request
+    const redirectUrl = req.body.redirectUrl || `${process.env.FRONTEND_URL || 'https://clans-landing.10on10studios.com'}/CardPage`;
+    
+    // Add tweet data to URL as query parameters
+    const redirectWithData = new URL(redirectUrl);
+    // Access the tweet ID correctly from the Twitter API v2 response structure
+    const tweetId = tweetResponse.tweet?.data?.id || '';
+    console.log("Extracted Tweet ID:", tweetId);
+    
+    redirectWithData.searchParams.append('tweetId', tweetId);
+    redirectWithData.searchParams.append('userId', userId);
+    
+    // Return the full tweet response if no redirect is needed
+    if (req.query.noRedirect === 'true') {
+      return res.status(HTTP_STATUS.CREATED).json({
+        success: true,
+        tweet: tweetResponse,
+        tweetId: tweetId,
+        redirectUrl: redirectWithData.toString()
+      });
+    }
+    
+    // Redirect to frontend with tweet data
+    res.redirect(redirectWithData.toString());
   } catch (error) {
     console.error('Error posting tweet:', error);
     next(error);
