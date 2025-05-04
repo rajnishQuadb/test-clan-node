@@ -134,7 +134,12 @@ export const postTweet = catchAsync(async (req: Request, res: Response, next: Ne
     }
     
     // Redirect to frontend with tweet data
-    res.redirect(redirectWithData.toString());
+    return res.status(HTTP_STATUS.CREATED).json({
+      success: true,
+      tweet: tweetResponse,
+      tweetId: tweetId,
+      redirectUrl: redirectWithData.toString()
+    });
   } catch (error) {
     console.error('Error posting tweet:', error);
     next(error);
