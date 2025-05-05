@@ -118,8 +118,7 @@ class ReferralService {
         pendingRewards: pendingReferrals * REFERRAL_REWARD_POINTS,
         referrals: referrals.map(r => ({
           joinedAt: r.joinedAt,
-          rewardGiven: r.rewardGiven,
-          tweetId: r.tweetId ?? null,
+          rewardGiven: r.rewardGiven
         })),
       };
     } catch (error) {

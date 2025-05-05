@@ -258,13 +258,16 @@ export const Get_Filtered_Users = catchAsync(
 // upate user to the early user
 export const Early_User = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { userID } = req.query;
+    const { userId, tweetId } = req.query;
 
-    if (!userID || typeof userID !== 'string') {
+    if (!userId || typeof userId !== 'string') {
       throw new AppError('Missing or invalid userID in query', HTTP_STATUS.BAD_REQUEST);
     }
 
-    const user = await userService.updateUserToEarlyUser(userID);
+    console.log("tweetId", tweetId);
+    console.log(typeof tweetId, tweetId);
+
+    const user = await userService.updateUserToEarlyUser(userId, tweetId as string);
 
     res.status(HTTP_STATUS.OK).json({
       success: true,
