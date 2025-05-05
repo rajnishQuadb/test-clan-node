@@ -24,6 +24,7 @@ router.get('/fetch/:id', Get_Single_User);
 // router.put('/update/:id', protect, Update_User);
 router.put('/update/:id', Update_User);
 
-router.patch('/:userId/early-user', Early_User);
+router.post('/earlyUser', Early_User);
+
 
 export default router;
