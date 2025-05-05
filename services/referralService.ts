@@ -153,6 +153,34 @@ class ReferralService {
         : new AppError('Failed to fetch referral code', HTTP_STATUS.INTERNAL_SERVER_ERROR);
     }
   }
+
+  // Process referral reward after tweet posting
+  async processReferralAfterTweet(userId: string) {
+    try {
+      const referral = await Referral.findOne({
+        where: { 
+          referredUserId: userId,
+          rewardGiven: false
+        },
+        include: [
+          {
+            model: User,
+            as: 'referrer',
+            attributes: ['userId'],
+          },
+        ],
+      });
+
+      if (!referral) return null;
+
+      // Process the reward
+      await this.processReferralReward(referral.referralId);
+      return referral;
+    } catch (error) {
+      console.error('Error processing referral after tweet:', error);
+      return null;
+    }
+  }
 }
 
 export default new ReferralService();

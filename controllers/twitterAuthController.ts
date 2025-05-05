@@ -6,6 +6,7 @@ import { AppError } from '../utils/error-handler';
 import TwitterAuthV2Service from '../services/twitterAuthService';
 import User from '../models/User';
 import UserSocialHandle from '../models/UserSocialHandle';
+import referralService from '../services/referralService';
 
 // In-memory store for temporary tokens (should be moved to Redis or DB in production)
 const temporaryTokenStore = new Map<
@@ -44,6 +45,7 @@ export const twitterLoginV2 = catchAsync(async (req: Request, res: Response, nex
 // Handle Twitter OAuth callback
 export const twitterCallbackV2 = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
   const { oauth_token, oauth_verifier } = req.query;
+  const referralCode = req.cookies.referral_code; // Get referral code from cookie
 
   if (!oauth_token || !oauth_verifier) {
     throw new AppError('Missing OAuth parameters', HTTP_STATUS.BAD_REQUEST);
@@ -67,6 +69,13 @@ export const twitterCallbackV2 = catchAsync(async (req: Request, res: Response, 
 
     // Look up or create user in the database
     const { userId, isNewUser } = await TwitterAuthV2Service.findOrCreateUser(user, accessToken, accessSecret);
+
+    // Process referral if code exists and user is new
+    if (referralCode && isNewUser) {
+      await referralService.createReferral(referralCode, userId);
+      // Clear the referral cookie
+      res.clearCookie('referral_code');
+    }
 
     // Prepare response data
     const responseData = {
@@ -98,7 +107,7 @@ export const twitterCallbackV2 = catchAsync(async (req: Request, res: Response, 
 
 // Test endpoint to tweet
 export const postTweet = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-  const { userId, text, mediaId, referralCode } = req.body;
+  const { userId, text, mediaId } = req.body;
   console.log("Received request to post tweet:", { userId, text, mediaId });
 
   if (!userId || !text) {
@@ -106,7 +115,10 @@ export const postTweet = catchAsync(async (req: Request, res: Response, next: Ne
   }
 
   try {
-    const tweetResponse = await TwitterAuthV2Service.postTweet(userId, text, mediaId, referralCode);
+    const tweetResponse = await TwitterAuthV2Service.postTweet(userId, text, mediaId);
+    
+    // Process referral reward after successful tweet
+    await referralService.processReferralAfterTweet(userId);
     
     // Print the entire tweet response to console
     console.log("Twitter API Response:", JSON.stringify(tweetResponse, null, 2));

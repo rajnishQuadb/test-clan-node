@@ -13,5 +13,19 @@ router.get('/get_referral_stats', referralController.getReferralStats as Request
 // Update referral record when a user uses a referral codes
 router.post('/join_referral', referralController.useReferralCode as RequestHandler);
 
+// Handle referral redirect
+router.get('/redirect/:referralCode', (req, res) => {
+  const { referralCode } = req.params;
+
+  // Store referral code in a cookie that expires in 7 days
+  res.cookie('referral_code', referralCode, {
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax'
+  });
+  // Redirect to main page
+  res.redirect(process.env.NEXT_PUBLIC_API_BASE_URL_FRONTEND || '/');
+});
 
 export default router; 
