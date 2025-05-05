@@ -77,7 +77,7 @@ export const twitterCallbackV2 = catchAsync(async (req: Request, res: Response, 
       res.clearCookie('referral_code');
     }
 
-    // Prepare response data
+    // Prepare response data -- Earlier Used for app
     const responseData = {
       success: true,
       user: {
