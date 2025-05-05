@@ -80,15 +80,30 @@ export const Get_All_Clans = catchAsync(async (req: Request, res: Response, next
 
 // User joins the clan
 export const Join_Clan = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-  const { userId, clanId } = req.body; // Assume these come in the request body
-  
-  // Call service method to handle business logic
-  const result = await clanService.joinClan(userId, clanId);
+  const { userId, clanId } = req.body;
 
-  res.status(200).json({
-    success: true,
-    data: result, // Return success message or updated data
-  });
+  // Validate required parameters
+  if (!userId || !clanId) {
+    return next(new AppError('Both userId and clanId are required.', HTTP_STATUS.BAD_REQUEST));
+  }
+
+  try {
+    // Call service method to handle business logic
+    const result = await clanService.joinClan(userId, clanId);
+
+    res.status(HTTP_STATUS.OK).json({
+      success: true,
+      data: result,
+    });
+  } catch (error) {
+    // Handle specific error cases
+    if (error instanceof AppError) {
+      return next(error);
+    }
+
+    console.error('Error in joinClan controller:', error);
+    return next(new AppError('Failed to join clan. Please try again later.', HTTP_STATUS.INTERNAL_SERVER_ERROR));
+  }
 });
 
 // User update the clan
