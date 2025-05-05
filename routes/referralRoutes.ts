@@ -1,16 +1,17 @@
 import { Router } from 'express';
 import referralController from '../controllers/referralController';
-import { authenticateUser } from '../middleware/auth';
+import { RequestHandler } from 'express';
 
 const router = Router();
 
 // Get user's referral code and link
-router.get('/code', authenticateUser, referralController.getReferralCode);
+router.get('/generate_referral_code', referralController.getReferralCode as RequestHandler);
 
 // Get referral statistics
-router.get('/stats', authenticateUser, referralController.getReferralStats);
+router.get('/get_referral_stats', referralController.getReferralStats as RequestHandler);
 
-// Use a referral code
-router.post('/use', authenticateUser, referralController.useReferralCode);
+// Update referral record when a user uses a referral codes
+router.post('/join_referral', referralController.useReferralCode as RequestHandler);
+
 
 export default router; 

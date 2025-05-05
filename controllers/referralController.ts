@@ -6,7 +6,7 @@ import { AuthRequest } from '../types/user';
 
 class ReferralController {
   // Get user's referral code and link
-  async getReferralCode(req: AuthRequest, res: Response) {
+  getReferralCode = async(req: AuthRequest, res: Response) => {
     try {
       const userId = req.user?.userId;
       if (!userId) {
@@ -28,7 +28,7 @@ class ReferralController {
   }
 
   // Get referral statistics
-  async getReferralStats(req: AuthRequest, res: Response) {
+  getReferralStats= async(req: AuthRequest, res: Response) => {
     try {
       const userId = req.user?.userId;
       if (!userId) {
@@ -50,7 +50,7 @@ class ReferralController {
   }
 
   // Use a referral code
-  async useReferralCode(req: AuthRequest, res: Response) {
+  useReferralCode = async(req: AuthRequest, res: Response) => {
     try {
       const userId = req.user?.userId;
       const { referralCode } = req.body;
