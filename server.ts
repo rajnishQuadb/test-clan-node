@@ -65,7 +65,16 @@ app.get('/api', (req: Request, res: Response) => {
 app.get('/api/v1/dev', (req: Request, res: Response) => {
   res.send('CLANS-NODE-APP API v1 is running');
 });
-
+// Route so reset the DB and start fresh (Only for development purposes)
+app.get('/api/v1/reset', async (req: Request, res: Response) => {
+  try {
+    await sequelize.sync({ force: true });
+    res.status(200).json({ message: 'Database reset successfully' });
+  } catch (error) {
+    console.error('Error resetting database:', error);
+    res.status(500).json({ message: 'Error resetting database' });
+  }
+});
 // Register Twitter auth routes
 app.use('/api/auth', twitterAuthRoutes);
 
