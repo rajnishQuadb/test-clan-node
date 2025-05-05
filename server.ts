@@ -97,7 +97,7 @@ app.use('/api/auth', appleAuthRoutes);
 // Register Twitter auth routes
 app.use('/api/auth', twitterAuthRoutes);
 // Register clans routes
-app.use('/clans', clanRoutes);
+app.use('/api/clans', clanRoutes);
 // Register Twitter post routes
 app.use('/api/twitter', twitterPostRoutes);
 // Register Referral routes
