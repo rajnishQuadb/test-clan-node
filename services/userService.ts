@@ -6,6 +6,8 @@ import sequelize  from '../config/db';
 import { User } from '../models/User';
 import jwt from 'jsonwebtoken';
 import { UserSocialHandle } from '../models/UserSocialHandle';
+import UserTweets from '../models/UserTweets';
+
 class UserService {
     // Add this method to your UserService class
     generateToken(userId: string): string {
@@ -120,21 +122,37 @@ class UserService {
     }
   }
 
-  async updateUserToEarlyUser(userId: string) {
-
+  async updateUserToEarlyUser(userId: string, tweetId: string) {
     const user = await userRepository.findUserById(userId);
-
+  
     if (!user) {
-      throw new AppError('User not found', 404);
+      throw new AppError("User not found", 404);
     }
-
+  
     // Update user to early user
     user.isEarlyUser = true;
-
+  
+    // Try to create tweet record
+    let tweetRecord;
+    try {
+      tweetRecord = await UserTweets.create({
+        tweetId,
+        userId,
+        isEarlyTweet: true,
+      });
+      console.log("Tweet Record Created:", tweetRecord);
+    } catch (error: any) {
+      console.error("Failed to create tweet record:", error.message);
+      // Optionally, log full error to a logging service here
+      throw new AppError("Failed to record tweet", 500);
+    }
+  
     // Save the updated user
     await userRepository.saveUser(user);
+  
     return user;
   }
+  
 
 
   // Add this method to your UserService class
