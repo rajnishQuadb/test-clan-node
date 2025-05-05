@@ -96,7 +96,6 @@ export const twitterCallbackV2 = catchAsync(async (req: Request, res: Response, 
   }
 });
 
-// Test endpoint to tweet
 export const postTweet = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
   const { userId, text, mediaId, referralCode } = req.body;
   console.log("Received request to post tweet:", { userId, text, mediaId });
@@ -110,41 +109,24 @@ export const postTweet = catchAsync(async (req: Request, res: Response, next: Ne
     
     // Print the entire tweet response to console
     console.log("Twitter API Response:", JSON.stringify(tweetResponse, null, 2));
-    
-    // Check if redirectUrl is provided in the request
-    const redirectUrl = req.body.redirectUrl || `${process.env.FRONTEND_URL || 'https://clans-landing.10on10studios.com'}/CardPage`;
-    
-    // Add tweet data to URL as query parameters
-    const redirectWithData = new URL(redirectUrl);
-    // Access the tweet ID correctly from the Twitter API v2 response structure
-    const tweetId = tweetResponse.tweet?.data?.id || '';
+
+    // Extract tweet ID from response
+    const tweetId = tweetResponse?.tweet?.data?.id || null;
     console.log("Extracted Tweet ID:", tweetId);
-    
-    redirectWithData.searchParams.append('tweetId', tweetId);
-    redirectWithData.searchParams.append('userId', userId);
-    
-    // Return the full tweet response if no redirect is needed
-    if (req.query.noRedirect === 'true') {
-      return res.status(HTTP_STATUS.CREATED).json({
-        success: true,
-        tweet: tweetResponse,
-        tweetId: tweetId,
-        redirectUrl: redirectWithData.toString()
-      });
-    }
-    
-    // Redirect to frontend with tweet data
+
     return res.status(HTTP_STATUS.CREATED).json({
       success: true,
-      tweet: tweetResponse,
-      tweetId: tweetId,
-      redirectUrl: redirectWithData.toString()
+      message: "Tweet posted successfully",
+      tweetId,
+      tweetData: tweetResponse?.tweet?.data || null,
     });
+
   } catch (error) {
     console.error('Error posting tweet:', error);
     next(error);
   }
 });
+
 
 // Upload media
 export const uploadMedia = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
