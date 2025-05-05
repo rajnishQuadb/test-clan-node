@@ -19,6 +19,7 @@ import twitterAuthRoutes from './routes/twitterAuthRoutes';
 import path from 'path';
 import clanRoutes from './routes/clansRoutes';
 import twitterPostRoutes from './routes/twitterPostRoutes';
+import referralRoutes from './routes/referralRoutes';
 // Load env vars
 dotenv.config();
 
@@ -27,7 +28,14 @@ const app = express();
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-app.use(cors());
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production' 
+    ? 'https://clans.10on10studios.com' 
+    : 'http://localhost:3000',
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-user-role']
+}));
 
 // Basic request logging middleware
 app.use((req: Request, res: Response, next: NextFunction) => {
@@ -66,19 +74,20 @@ app.get('/api/v1/dev', (req: Request, res: Response) => {
   res.send('CLANS-NODE-APP API v1 is running');
 });
 
-// Register Twitter auth routes
-app.use('/api/auth', twitterAuthRoutes);
-
 // Mount routes
 app.use('/api/user', userRoutes);
 // Register Google auth routes
 app.use('/api/auth', googleAuthRoutes);
 // Register Apple auth routes
 app.use('/api/auth', appleAuthRoutes);
+// Register Twitter auth routes
+app.use('/api/auth', twitterAuthRoutes);
 // Register clans routes
 app.use('/clans', clanRoutes);
 // Register Twitter post routes
 app.use('/api/twitter', twitterPostRoutes);
+// Register Referral routes
+app.use('/api/referral', referralRoutes);
 // Not found middleware
 app.use((req: Request, res: Response, next: NextFunction) => {
   next(new AppError(`Cannot find ${req.originalUrl} on this server`, HTTP_STATUS.NOT_FOUND));
