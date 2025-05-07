@@ -26,6 +26,7 @@ import './models/Campaign';
 import './models/CampaignLeaderBoard';
 import './models/CampaignLeaderBoardUser';
 import './models/CampaignParticipant';
+import {createUserLimiter} from './middleware/rateLimiter';
 setupAssociations(); // Call the function to set up all associations
 
 
@@ -57,14 +58,25 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 });
 
 // Configure session and passport
+// app.use(session({
+//   secret: process.env.SESSION_SECRET || 'twitter-auth-secret',
+//   resave: false,
+//   saveUninitialized: false,
+//   cookie: { secure: process.env.NODE_ENV === 'production' }
+// }));
+
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'twitter-auth-secret',
+  secret: process.env.SESSION_SECRET || 'your-secret-key',
   resave: false,
   saveUninitialized: false,
-  cookie: { secure: process.env.NODE_ENV === 'production' }
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 60 * 60 * 1000 // 1 hour
+  }
 }));
-app.use(passport.initialize());
-app.use(passport.session());
+
+// app.use(passport.initialize());
+// app.use(passport.session());
 
 // Serve static HTML pages
 app.get('/privacyPolicy', (req, res) => {
@@ -79,7 +91,7 @@ app.get('/termsOfService', (req, res) => {
 app.get('/', (req: Request, res: Response) => {
   res.send('CLANS-NODE-APP is running');
 });
-app.get('/api', (req: Request, res: Response) => {
+app.get('/api', createUserLimiter, (req: Request, res: Response) => {
   res.send('CLANS-NODE-APP API is running');
 });
 
