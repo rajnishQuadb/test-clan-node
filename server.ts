@@ -13,6 +13,7 @@ import setupAssociations from './models/associations';
 import userRoutes from './routes/usersRoutes';
 import googleAuthRoutes from './routes/googleAuthRoutes';
 import appleAuthRoutes from './routes/appleAuthRoutes';
+import discordAuthRoutes from './routes/discordAuthRoutes';
 import { AppError } from './utils/error-handler';
 import { HTTP_STATUS } from './constants/http-status';
 import passport from 'passport';
@@ -117,6 +118,8 @@ app.use('/api/user', userRoutes);
 app.use('/api/auth', googleAuthRoutes);
 // Register Apple auth routes
 app.use('/api/auth', appleAuthRoutes);
+// Discord auth routes
+app.use('/api/auth', discordAuthRoutes);
 
 app.use('/api/campaign', campaignRoutes);
 
