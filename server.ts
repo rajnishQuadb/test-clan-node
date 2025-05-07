@@ -1,6 +1,7 @@
 import express, { Request, Response, NextFunction } from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 
 // Database and models
 import sequelize from './config/db';
@@ -26,6 +27,9 @@ import './models/CampaignParticipant';
 setupAssociations(); // Call the function to set up all associations
 
 
+import clanRoutes from './routes/clansRoutes';
+import twitterPostRoutes from './routes/twitterPostRoutes';
+import referralRoutes from './routes/referralRoutes';
 // Load env vars
 dotenv.config();
 
@@ -34,7 +38,15 @@ const app = express();
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-app.use(cors());
+app.use(cookieParser());
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production' 
+    ? 'https://clans.10on10studios.com' 
+    : 'http://localhost:3000',
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-user-role']
+}));
 
 // Basic request logging middleware
 app.use((req: Request, res: Response, next: NextFunction) => {
@@ -51,9 +63,6 @@ app.use(session({
 }));
 app.use(passport.initialize());
 app.use(passport.session());
-
-// Register Twitter auth routes
-app.use('/api/auth', twitterAuthRoutes);
 
 // Serve static HTML pages
 app.get('/privacyPolicy', (req, res) => {
@@ -72,13 +81,36 @@ app.get('/api', (req: Request, res: Response) => {
   res.send('CLANS-NODE-APP API is running');
 });
 
+app.get('/api/v1/dev', (req: Request, res: Response) => {
+  res.send('CLANS-NODE-APP API v1 is running');
+});
+// Route so reset the DB and start fresh (Only for development purposes)
+app.get('/api/v1/reset', async (req: Request, res: Response) => {
+  try {
+    await sequelize.sync({ force: true });
+    res.status(200).json({ message: 'Database reset successfully' });
+  } catch (error) {
+    console.error('Error resetting database:', error);
+    res.status(500).json({ message: 'Error resetting database' });
+  }
+});
+// Register Twitter auth routes
+app.use('/api/auth', twitterAuthRoutes);
+
 // Mount routes
 app.use('/api/user', userRoutes);
 // Register Google auth routes
 app.use('/api/auth', googleAuthRoutes);
 // Register Apple auth routes
 app.use('/api/auth', appleAuthRoutes);
-
+// Register Twitter auth routes
+app.use('/api/auth', twitterAuthRoutes);
+// Register clans routes
+app.use('/api/clans', clanRoutes);
+// Register Twitter post routes
+app.use('/api/twitter', twitterPostRoutes);
+// Register Referral routes
+app.use('/api/referral', referralRoutes);
 // Not found middleware
 app.use((req: Request, res: Response, next: NextFunction) => {
   next(new AppError(`Cannot find ${req.originalUrl} on this server`, HTTP_STATUS.NOT_FOUND));

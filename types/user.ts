@@ -52,6 +52,7 @@ export interface UserDTO {
   clanJoinDate?: Date;
   createdAt?: Date;
   updatedAt?: Date;
+  referralCode?: string;
   
   // Related entities
   socialHandles?: UserSocialHandleDTO[];
@@ -83,12 +84,13 @@ export interface SocialAuthRequest {
 }
 
 // For authenticated requests
-export interface AuthRequest extends Request {
-  user?: {
-    userId: string;
-    web3UserName: string;
-  };
+interface AuthUser {
+  userId: string;
+  web3UserName: string;
 }
+export type AuthRequest = Request & {
+  user?: AuthUser;
+};
 
 // JWT payload structure
 export interface JwtPayload {
