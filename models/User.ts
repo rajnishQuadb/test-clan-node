@@ -4,9 +4,19 @@ import UserSocialHandle from './UserSocialHandle';
 import UserWallet from './UserWallet';
 import UserRewardHistory from './UserRewardHistory';
 
+
+function generateReferralCode(): string {
+  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let code = '';
+  for (let i = 0; i < 10; i++) {
+    code += characters.charAt(Math.floor(Math.random() * characters.length));
+  }
+  return code;
+}
 // Define types for User
 interface UserAttributes {
   userId: string;                 // UUID Primary Key
+  referralCode?: string;       // UUID, unique, optional
   web3UserName: string;           // Unique, required
   DiD?: string;                   // Unique
   twitterAccessToken?: string;    // Encrypted, optional
@@ -24,6 +34,7 @@ interface UserCreationAttributes extends Optional<UserAttributes, 'userId'> {}
 export class User extends Model<UserAttributes, UserCreationAttributes> 
   implements UserAttributes {
   public userId!: string;
+  public referralCode?: string;
   public web3UserName!: string;
   public DiD?: string;
   public twitterAccessToken?: string;
@@ -56,6 +67,12 @@ User.init(
       type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true
+    },
+    referralCode: {
+      type: DataTypes.STRING(10),   // ✅ Max 10 chars
+      unique: true,
+      allowNull: false,
+      defaultValue: () => generateReferralCode()  // ✅ Custom generator
     },
     web3UserName: {
       type: DataTypes.STRING,

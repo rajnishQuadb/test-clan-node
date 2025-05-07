@@ -3,7 +3,7 @@ import UserSocialHandle from '../models/UserSocialHandle';
 import UserWallet from '../models/UserWallet';
 import UserRewardHistory from '../models/UserRewardHistory';
 import { UserDTO, UserSocialHandleDTO, UserWalletDTO, UserRewardHistoryDTO } from '../types/user';
-import { Op } from 'sequelize';
+import { Referral } from '../models/Referral';
 
 class UserRepository {
   async createUser(userData: UserDTO): Promise<UserDTO> {
@@ -269,8 +269,32 @@ class UserRepository {
       updatedAt: user.updatedAt,
       socialHandles,
       wallets,
-      rewardHistory
+      rewardHistory,
+      referralCode: user.referralCode
     };
+  }
+
+  async findUserById(userId: string) {
+    return await User.findByPk(userId);
+  }
+
+  // Save the updated user to the database
+  async saveUser(user: any) {
+    return await user.save(); // You can customize this to fit your ORM's syntax
+  }
+
+  async findUserByReferralCode(referralCode: string) {
+    return User.findOne({ where: { referralCode, isActiveUser: true } });
+  }
+  async createReferral(data: {
+    referrerUserId: string;
+    referredUserId: string;
+    referralCode: string;
+    joinedAt: Date;
+    rewardGiven: boolean;
+    tweetId: string;
+  }) {
+    return Referral.create(data);
   }
 }
 

@@ -1,143 +1,219 @@
-import jwt from 'jsonwebtoken';
-import passport from 'passport';
-import { Strategy as TwitterStrategy } from 'passport-twitter';
-import { TwitterProfile, TwitterUserDTO, TwitterTokens } from '../types/twitterAuth';
+import { TwitterApi } from 'twitter-api-v2';
+import { v4 as uuidv4 } from 'uuid';
 import { AppError } from '../utils/error-handler';
 import { HTTP_STATUS } from '../constants/http-status';
-
-// Twitter API credentials
-const TWITTER_CONSUMER_KEY = process.env.TWITTER_CONSUMER_KEY || '';
-const TWITTER_CONSUMER_SECRET = process.env.TWITTER_CONSUMER_SECRET || '';
-const TWITTER_CALLBACK_URL = process.env.TWITTER_CALLBACK_URL || 'http://localhost:3000/api/auth/twitter/callback';
-
-if (!TWITTER_CONSUMER_KEY || !TWITTER_CONSUMER_SECRET) {
-  console.error('Missing required Twitter API credentials');
-}
-
-class TwitterAuthService {
-  constructor() {
-    this.initializePassport();
+import TwitterAuthV2Repository from '../repositories/twitterAuthRepository';
+import userRepository from '../repositories/userRepository';
+class TwitterAuthV2Service {
+  // Complete Twitter authentication process
+  async completeAuthentication(
+    tempToken: string, 
+    verifier: string, 
+    stored: { accessToken: string; accessSecret: string }
+  ) {
+    const client = new TwitterApi({
+      appKey: process.env.TWITTER_CONSUMER_KEY!,
+      appSecret: process.env.TWITTER_CONSUMER_SECRET!,
+      accessToken: stored.accessToken,
+      accessSecret: stored.accessSecret,
+    });
+    
+    try {
+      // Login and get the authenticated client
+      const {
+        accessToken,
+        accessSecret,
+        client: loggedClient,
+      } = await client.login(verifier);
+      
+      // Get the user information
+      const user = await loggedClient.currentUser();
+      
+      return {
+        user,
+        accessToken,
+        accessSecret
+      };
+    } catch (error) {
+      console.error('Twitter authentication error:', error);
+      throw new AppError(
+        error instanceof Error ? error.message : 'Authentication failed',
+        HTTP_STATUS.INTERNAL_SERVER_ERROR
+      );
+    }
   }
   
-  // Initialize Twitter strategy
-  private initializePassport() {
-    passport.use(new TwitterStrategy({
-      consumerKey: TWITTER_CONSUMER_KEY,
-      consumerSecret: TWITTER_CONSUMER_SECRET,
-      callbackURL: TWITTER_CALLBACK_URL,
-      includeEmail: true
-    }, 
-    async (token, tokenSecret, profile, done) => {
-      try {
-        // Store tokens for later use if needed
-        const tokens: TwitterTokens = { token, tokenSecret };
+  // Find or create user in database
+  async findOrCreateUser(
+    twitterUser: any, 
+    accessToken: string, 
+    accessSecret: string
+  ) {
+    try {
+      // Check if user already exists
+      const existingUser = await TwitterAuthV2Repository.findBySocialId(twitterUser.id_str);
+      
+      if (existingUser) {
+        // Update existing user with new tokens
+        await TwitterAuthV2Repository.updateTokens(
+          existingUser.userId,
+          accessToken,
+          accessSecret
+        );
         
-        // Pass profile and tokens to the callback
-        return done(null, { profile, tokens });
-      } catch (error) {
-        return done(error as Error);
-      }
-    }));
-    
-    // Serialize user for session storage
-    passport.serializeUser((user, done) => {
-      done(null, user);
-    });
-    
-    // Deserialize user from session
-    passport.deserializeUser((obj, done) => {
-      done(null, obj as false | TwitterUserDTO | null | undefined);
-    });
-  }
-  
-  // Handle user from Twitter profile - just create the object without saving to DB
-  async handleTwitterCallback(profile: TwitterProfile, tokens: TwitterTokens): Promise<{ user: TwitterUserDTO, accessToken: string, refreshToken: string }> {
-    try {
-      const { id: twitterId, username, displayName, emails, photos, _json } = profile;
-      
-      if (!twitterId || !username) {
-        throw new AppError('Missing required user information', HTTP_STATUS.BAD_REQUEST);
+        return {
+          userId: existingUser.userId,
+          isNewUser: false
+        };
       }
       
-      // Get email if available (Twitter doesn't always provide this)
-      const email = emails && emails.length > 0 ? emails[0].value : undefined;
+      // Create new user and social handle
+      const userId = uuidv4();
       
-      // Get profile picture
-      const profilePicture = photos && photos.length > 0 
-        ? photos[0].value 
-        : (_json && _json.profile_image_url_https) || undefined;
+      // Create user - store Twitter tokens in the User model
+      await TwitterAuthV2Repository.createUser({
+        userId,
+        web3UserName: `${twitterUser.screen_name}_${Date.now()}`,
+        twitterAccessToken: accessToken,
+        twitterRefreshToken: accessSecret, // Store accessSecret as refreshToken
+        isActiveUser: true
+      });
       
-      // Create user object without DB storage
-      const user: TwitterUserDTO = {
-        twitterId,
-        username,
-        displayName,
-        email,
-        profilePicture
+      // Create social handle - without tokens (they're stored in User model)
+      await TwitterAuthV2Repository.createSocialHandle({
+        userId,
+        provider: 'twitter',
+        socialId: twitterUser.id_str,
+        username: twitterUser.screen_name,
+        displayName: twitterUser.name,
+        profilePicture: twitterUser.profile_image_url_https,
+        email: twitterUser.email // Include email if available
+      });
+      
+      return {
+        userId,
+        isNewUser: true
       };
-      
-      // Generate JWT tokens
-      const accessToken = this.generateAccessToken(twitterId, username);
-      const refreshToken = this.generateRefreshToken(twitterId, username);
-      
-      return { user, accessToken, refreshToken };
     } catch (error) {
-      console.error('Error handling Twitter callback:', error);
-      if (error instanceof AppError) {
-        throw error;
-      }
-      throw new AppError('Failed to process Twitter authentication', HTTP_STATUS.BAD_REQUEST);
+      console.error('Error finding/creating user:', error);
+      throw error;
     }
   }
   
-  // For testing purposes only - no DB access
-  async testMockAuth(mockData: {
-    twitterId: string;
-    username: string;
-    displayName: string;
-    email?: string;
-    profilePicture?: string;
-  }): Promise<{ user: TwitterUserDTO, accessToken: string, refreshToken: string }> {
+  // Post a tweet
+  async postTweet(userId: string, text: string, mediaId?: string , referralCode?: string) {
     try {
-      const { twitterId, username, displayName, email, profilePicture } = mockData;
+      // Get user's tokens from User model
+      const user = await TwitterAuthV2Repository.findUserById(userId);
       
-      // Create user object without DB storage
-      const user: TwitterUserDTO = {
-        twitterId,
-        username,
-        displayName,
-        email,
-        profilePicture
-      };
+      if (!user || !user.twitterAccessToken || !user.twitterRefreshToken) {
+        throw new AppError('User not authenticated with Twitter', HTTP_STATUS.UNAUTHORIZED);
+      }
       
-      // Generate JWT tokens
-      const accessToken = this.generateAccessToken(twitterId, username);
-      const refreshToken = this.generateRefreshToken(twitterId, username);
+      // Create Twitter client with user's tokens
+      const client = new TwitterApi({
+        appKey: process.env.TWITTER_CONSUMER_KEY!,
+        appSecret: process.env.TWITTER_CONSUMER_SECRET!,
+        accessToken: user.twitterAccessToken,
+        accessSecret: user.twitterRefreshToken, // Using the refresh token as access secret
+      });
       
-      return { user, accessToken, refreshToken };
+      // Prepare tweet payload
+      const tweetPayload: any = { text };
+      
+      // Add media if provided
+      if (mediaId) {
+        tweetPayload.media = { media_ids: [mediaId] };
+      }
+      
+      // Post the tweet
+      const tweet = await client.v2.tweet(tweetPayload);
+
+      if (tweet?.data?.id && referralCode) {
+              const referrer = await userRepository.findUserByReferralCode(referralCode);
+              if (!referrer) {
+                throw new AppError('Invalid referral code', HTTP_STATUS.BAD_REQUEST);
+              }
+      
+              await userRepository.createReferral({
+                referrerUserId: referrer.userId,
+                referredUserId: userId,
+                referralCode,
+                joinedAt: new Date(),
+                rewardGiven: false,
+                tweetId: tweet.data.id
+              });
+            }
+
+      return {tweet , referralCode};
     } catch (error) {
-      console.error('Error in mock authentication:', error);
-      throw new AppError('Mock authentication failed', HTTP_STATUS.BAD_REQUEST);
+      console.error('Error posting tweet:', error);
+      throw new AppError(
+        error instanceof Error ? error.message : 'Failed to post tweet',
+        HTTP_STATUS.INTERNAL_SERVER_ERROR
+      );
     }
   }
   
-  // Generate an access token
-  generateAccessToken(twitterId: string, username: string): string {
-    return jwt.sign(
-      { id: twitterId, username },
-      process.env.JWT_SECRET || 'your_jwt_secret',
-      { expiresIn: '15m' }
-    );
+  // Upload media
+  async uploadMedia(userId: string, mediaBuffer: Buffer, mimeType: string = 'image/jpeg') {
+    try {
+      // Get user's tokens from User model
+      const user = await TwitterAuthV2Repository.findUserById(userId);
+      
+      if (!user || !user.twitterAccessToken || !user.twitterRefreshToken) {
+        throw new AppError('User not authenticated with Twitter', HTTP_STATUS.UNAUTHORIZED);
+      }
+      
+      // Create Twitter client with user's tokens
+      const client = new TwitterApi({
+        appKey: process.env.TWITTER_CONSUMER_KEY!,
+        appSecret: process.env.TWITTER_CONSUMER_SECRET!,
+        accessToken: user.twitterAccessToken,
+        accessSecret: user.twitterRefreshToken, // Using the refresh token as access secret
+      });
+      
+      // Upload the media
+      const mediaId = await client.v1.uploadMedia(mediaBuffer, { mimeType });
+      return mediaId;
+    } catch (error) {
+      console.error('Error uploading media:', error);
+      throw new AppError(
+        error instanceof Error ? error.message : 'Failed to upload media',
+        HTTP_STATUS.INTERNAL_SERVER_ERROR
+      );
+    }
   }
   
-  // Generate a refresh token
-  generateRefreshToken(twitterId: string, username: string): string {
-    return jwt.sign(
-      { id: twitterId, username },
-      process.env.JWT_SECRET || 'your_jwt_secret',
-      { expiresIn: '7d' }
-    );
+  // Verify user credentials
+  async verifyCredentials(userId: string) {
+    try {
+      // Get user's tokens from User model
+      const user = await TwitterAuthV2Repository.findUserById(userId);
+      
+      if (!user || !user.twitterAccessToken || !user.twitterRefreshToken) {
+        throw new AppError('User not authenticated with Twitter', HTTP_STATUS.UNAUTHORIZED);
+      }
+      
+      // Create Twitter client with user's tokens
+      const client = new TwitterApi({
+        appKey: process.env.TWITTER_CONSUMER_KEY!,
+        appSecret: process.env.TWITTER_CONSUMER_SECRET!,
+        accessToken: user.twitterAccessToken,
+        accessSecret: user.twitterRefreshToken, // Using the refresh token as access secret
+      });
+      
+      // Verify credentials by getting current user
+      const twitterUser = await client.currentUser();
+      return twitterUser;
+    } catch (error) {
+      console.error('Error verifying credentials:', error);
+      throw new AppError(
+        error instanceof Error ? error.message : 'Failed to verify Twitter credentials',
+        HTTP_STATUS.INTERNAL_SERVER_ERROR
+      );
+    }
   }
 }
 
-export default new TwitterAuthService();
+export default new TwitterAuthV2Service();
