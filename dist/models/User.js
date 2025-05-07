@@ -58,8 +58,11 @@ User.init({
     },
     activeClanId: {
         type: sequelize_1.DataTypes.UUID,
-        allowNull: true
-        // references will be set up in associations
+        allowNull: true,
+        // references: {
+        //   model: 'Clans',
+        //   key: 'id'
+        // }
     },
     clanJoinDate: {
         type: sequelize_1.DataTypes.DATE,

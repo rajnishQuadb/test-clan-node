@@ -10,6 +10,7 @@ const db_1 = __importDefault(require("../config/db"));
 const User_1 = require("../models/User");
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const UserSocialHandle_1 = require("../models/UserSocialHandle");
+const UserTweets_1 = __importDefault(require("../models/UserTweets"));
 class UserService {
     // Add this method to your UserService class
     generateToken(userId) {
@@ -112,13 +113,28 @@ class UserService {
             throw new error_handler_1.AppError('Failed to fetch filtered users', http_status_1.HTTP_STATUS.INTERNAL_SERVER_ERROR);
         }
     }
-    async updateUserToEarlyUser(userId) {
+    async updateUserToEarlyUser(userId, tweetId) {
         const user = await userRepository_1.default.findUserById(userId);
         if (!user) {
-            throw new error_handler_1.AppError('User not found', 404);
+            throw new error_handler_1.AppError("User not found", 404);
         }
         // Update user to early user
         user.isEarlyUser = true;
+        // Try to create tweet record
+        let tweetRecord;
+        try {
+            tweetRecord = await UserTweets_1.default.create({
+                tweetId,
+                userId,
+                isEarlyTweet: true,
+            });
+            console.log("Tweet Record Created:", tweetRecord);
+        }
+        catch (error) {
+            console.error("Failed to create tweet record:", error.message);
+            // Optionally, log full error to a logging service here
+            throw new error_handler_1.AppError("Failed to record tweet", 500);
+        }
         // Save the updated user
         await userRepository_1.default.saveUser(user);
         return user;

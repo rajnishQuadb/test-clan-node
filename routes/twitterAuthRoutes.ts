@@ -5,14 +5,14 @@
 
 import { Router } from 'express';
 import { 
-  twitterLogin, 
-  twitterCallback, 
-  twitterTestAuth,
-  refreshTwitterToken,
+  twitterLoginV2,
+  twitterCallbackV2,
   postTweet,
-  directTweet
+  uploadMedia,
+  verifyCredentials
 } from '../controllers/twitterAuthController';
 import  {protect}  from '../middleware/auth';
+import multer from 'multer';
 
 
 const router = Router();

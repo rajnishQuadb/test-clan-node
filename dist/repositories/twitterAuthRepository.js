@@ -1,9 +1,4 @@
 "use strict";
-// import { v4 as uuidv4 } from 'uuid';
-// // import TwitterUser from '../models/TwitterUser';
-// import UserSocialHandle from '../models/UserSocialHandle';
-// import User from '../models/User';
-// import { TwitterUserDTO } from '../types/twitterAuth';
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };

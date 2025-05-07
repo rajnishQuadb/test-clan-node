@@ -31,7 +31,6 @@ setupAssociations(); // Call the function to set up all associations
 
 
 import clanRoutes from './routes/clansRoutes';
-import twitterPostRoutes from './routes/twitterPostRoutes';
 import referralRoutes from './routes/referralRoutes';
 // Load env vars
 dotenv.config();

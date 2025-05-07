@@ -27,8 +27,12 @@ UserRewardHistory.init({
     },
     campaignId: {
         type: sequelize_1.DataTypes.UUID,
-        allowNull: false
-        // references to campaigns table would be added when that model exists
+        allowNull: false,
+        references: {
+            model: 'Campaigns',
+            key: 'campaignId'
+        },
+        onDelete: 'CASCADE'
     },
     reward: {
         type: sequelize_1.DataTypes.DECIMAL(20, 8), // Appropriate for most cryptocurrency values

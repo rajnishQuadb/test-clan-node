@@ -36,10 +36,6 @@ Referral.init({
         type: sequelize_1.DataTypes.BOOLEAN,
         defaultValue: false
     },
-    tweetId: {
-        type: sequelize_1.DataTypes.STRING,
-        allowNull: true
-    }
 }, {
     sequelize: db_1.default,
     tableName: 'Referrals',

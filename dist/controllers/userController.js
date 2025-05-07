@@ -14,7 +14,7 @@ exports.Create_User = (0, error_handler_1.catchAsync)(async (req, res, next) => 
     const { user, token } = await userService_1.default.createUser(userData);
     const responseData = {
         success: true,
-        message: 'User created successfully',
+        message: "User created successfully",
         token,
         data: {
             userId: user.userId,
@@ -23,20 +23,20 @@ exports.Create_User = (0, error_handler_1.catchAsync)(async (req, res, next) => 
             isActiveUser: user.isActiveUser,
             isEarlyUser: user.isEarlyUser,
             activeClanId: user.activeClanId,
-            createdAt: user.createdAt
-        }
+            createdAt: user.createdAt,
+        },
     };
     // Encrypt if needed
-    if (process.env.ENCRYPT_RESPONSES === 'true') {
+    if (process.env.ENCRYPT_RESPONSES === "true") {
         try {
             const encryptedData = (0, encryption_1.encryptData)(responseData);
             return res.status(http_status_1.HTTP_STATUS.CREATED).json({
                 encrypted: true,
-                data: encryptedData
+                data: encryptedData,
             });
         }
         catch (error) {
-            console.error('Encryption error:', error);
+            console.error("Encryption error:", error);
             // Fall back to unencrypted response
         }
     }
@@ -49,7 +49,7 @@ exports.Update_User = (0, error_handler_1.catchAsync)(async (req, res, next) => 
     const user = await userService_1.default.updateUser(userId, userData);
     const responseData = {
         success: true,
-        message: 'User updated successfully',
+        message: "User updated successfully",
         data: {
             userId: user.userId,
             web3UserName: user.web3UserName,
@@ -57,20 +57,20 @@ exports.Update_User = (0, error_handler_1.catchAsync)(async (req, res, next) => 
             isActiveUser: user.isActiveUser,
             isEarlyUser: user.isEarlyUser,
             activeClanId: user.activeClanId,
-            updatedAt: user.updatedAt
-        }
+            updatedAt: user.updatedAt,
+        },
     };
     // Encrypt if needed
-    if (process.env.ENCRYPT_RESPONSES === 'true') {
+    if (process.env.ENCRYPT_RESPONSES === "true") {
         try {
             const encryptedData = (0, encryption_1.encryptData)(responseData);
             return res.status(http_status_1.HTTP_STATUS.OK).json({
                 encrypted: true,
-                data: encryptedData
+                data: encryptedData,
             });
         }
         catch (error) {
-            console.error('Encryption error:', error);
+            console.error("Encryption error:", error);
             // Fall back to unencrypted response
         }
     }
@@ -81,7 +81,7 @@ exports.Get_Single_User = (0, error_handler_1.catchAsync)(async (req, res, next)
     const userId = req.params.id;
     const user = await userService_1.default.getUserById(userId);
     // Check if sensitive data should be excluded (for non-admin users)
-    const isAdmin = req.headers['x-user-role'] === 'admin';
+    const isAdmin = req.headers["x-user-role"] === "admin";
     let responseData = {
         success: true,
         data: {
@@ -93,38 +93,38 @@ exports.Get_Single_User = (0, error_handler_1.catchAsync)(async (req, res, next)
             activeClanId: user.activeClanId,
             clanJoinDate: user.clanJoinDate,
             referralCode: user.referralCode,
-            createdAt: user.createdAt
-        }
+            createdAt: user.createdAt,
+        },
     };
     // Include related data
-    responseData.data.socialHandles = user.socialHandles?.map(handle => ({
+    responseData.data.socialHandles = user.socialHandles?.map((handle) => ({
         provider: handle.provider,
         username: handle.username,
         displayName: handle.displayName,
-        profilePicture: handle.profilePicture
+        profilePicture: handle.profilePicture,
     }));
     // Only include wallet addresses for admin or self
-    responseData.data.wallets = user.wallets?.map(wallet => ({
+    responseData.data.wallets = user.wallets?.map((wallet) => ({
         chain: wallet.chain,
         walletType: wallet.walletType,
         isPrimary: wallet.isPrimary,
-        walletAddress: isAdmin ? wallet.walletAddress : undefined
+        walletAddress: isAdmin ? wallet.walletAddress : undefined,
     }));
     // Only include reward history for admin or self
     if (isAdmin) {
         responseData.data.rewardHistory = user.rewardHistory;
     }
     // Encrypt if needed
-    if (process.env.ENCRYPT_RESPONSES === 'true') {
+    if (process.env.ENCRYPT_RESPONSES === "true") {
         try {
             const encryptedData = (0, encryption_1.encryptData)(responseData);
             return res.status(http_status_1.HTTP_STATUS.OK).json({
                 encrypted: true,
-                data: encryptedData
+                data: encryptedData,
             });
         }
         catch (error) {
-            console.error('Encryption error:', error);
+            console.error("Encryption error:", error);
             // Fall back to unencrypted response
         }
     }
@@ -136,7 +136,7 @@ exports.Get_All_Users = (0, error_handler_1.catchAsync)(async (req, res, next) =
     const limit = parseInt(req.query.limit) || 10;
     const { users, total, pages } = await userService_1.default.getAllUsers(page, limit);
     // Map to simplified representation
-    const simplifiedUsers = users.map(user => ({
+    const simplifiedUsers = users.map((user) => ({
         userId: user.userId,
         web3UserName: user.web3UserName,
         DiD: user.DiD,
@@ -145,7 +145,7 @@ exports.Get_All_Users = (0, error_handler_1.catchAsync)(async (req, res, next) =
         activeClanId: user.activeClanId,
         socialHandlesCount: user.socialHandles?.length || 0,
         walletsCount: user.wallets?.length || 0,
-        createdAt: user.createdAt
+        createdAt: user.createdAt,
     }));
     const responseData = {
         success: true,
@@ -154,20 +154,20 @@ exports.Get_All_Users = (0, error_handler_1.catchAsync)(async (req, res, next) =
             total,
             page,
             pages,
-            limit
-        }
+            limit,
+        },
     };
     // Encrypt if needed
-    if (process.env.ENCRYPT_RESPONSES === 'true') {
+    if (process.env.ENCRYPT_RESPONSES === "true") {
         try {
             const encryptedData = (0, encryption_1.encryptData)(responseData);
             return res.status(http_status_1.HTTP_STATUS.OK).json({
                 encrypted: true,
-                data: encryptedData
+                data: encryptedData,
             });
         }
         catch (error) {
-            console.error('Encryption error:', error);
+            console.error("Encryption error:", error);
             // Fall back to unencrypted response
         }
     }
@@ -175,12 +175,12 @@ exports.Get_All_Users = (0, error_handler_1.catchAsync)(async (req, res, next) =
 });
 // Get filtered users (active/deleted) with pagination
 exports.Get_Filtered_Users = (0, error_handler_1.catchAsync)(async (req, res, next) => {
-    const status = req.body.status || 'active';
+    const status = req.body.status || "active";
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const { users, total, pages } = await userService_1.default.getFilteredUsers(status, page, limit);
     // Map to simplified representation
-    const simplifiedUsers = users.map(user => ({
+    const simplifiedUsers = users.map((user) => ({
         userId: user.userId,
         web3UserName: user.web3UserName,
         DiD: user.DiD,
@@ -189,7 +189,7 @@ exports.Get_Filtered_Users = (0, error_handler_1.catchAsync)(async (req, res, ne
         activeClanId: user.activeClanId,
         socialHandlesCount: user.socialHandles?.length || 0,
         walletsCount: user.wallets?.length || 0,
-        createdAt: user.createdAt
+        createdAt: user.createdAt,
     }));
     const responseData = {
         success: true,
@@ -199,20 +199,20 @@ exports.Get_Filtered_Users = (0, error_handler_1.catchAsync)(async (req, res, ne
             total,
             page,
             pages,
-            limit
-        }
+            limit,
+        },
     };
     // Encrypt if needed
-    if (process.env.ENCRYPT_RESPONSES === 'true') {
+    if (process.env.ENCRYPT_RESPONSES === "true") {
         try {
             const encryptedData = (0, encryption_1.encryptData)(responseData);
             return res.status(http_status_1.HTTP_STATUS.OK).json({
                 encrypted: true,
-                data: encryptedData
+                data: encryptedData,
             });
         }
         catch (error) {
-            console.error('Encryption error:', error);
+            console.error("Encryption error:", error);
             // Fall back to unencrypted response
         }
     }
@@ -220,11 +220,16 @@ exports.Get_Filtered_Users = (0, error_handler_1.catchAsync)(async (req, res, ne
 });
 // upate user to the early user
 exports.Early_User = (0, error_handler_1.catchAsync)(async (req, res, next) => {
-    const { userId } = req.params;
-    const user = await userService_1.default.updateUserToEarlyUser(userId);
+    const { userId, tweetId } = req.query;
+    if (!userId || typeof userId !== 'string') {
+        throw new error_handler_1.AppError('Missing or invalid userID in query', http_status_1.HTTP_STATUS.BAD_REQUEST);
+    }
+    console.log("tweetId", tweetId);
+    console.log(typeof tweetId, tweetId);
+    const user = await userService_1.default.updateUserToEarlyUser(userId, tweetId);
     res.status(http_status_1.HTTP_STATUS.OK).json({
         success: true,
-        message: 'User updated to early user successfully',
+        message: "User updated to early user successfully",
         data: {
             userId: user.userId,
             referralCode: user.referralCode,
@@ -233,8 +238,8 @@ exports.Early_User = (0, error_handler_1.catchAsync)(async (req, res, next) => {
             isActiveUser: user.isActiveUser,
             isEarlyUser: user.isEarlyUser,
             activeClanId: user.activeClanId,
-            updatedAt: user.updatedAt
-        }
+            updatedAt: user.updatedAt,
+        },
     });
 });
 //# sourceMappingURL=userController.js.map
