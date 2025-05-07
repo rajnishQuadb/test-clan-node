@@ -2,7 +2,11 @@ import userRepository from '../repositories/userRepository';
 import { UserDTO } from '../types/user';
 import { AppError } from '../utils/error-handler';
 import { HTTP_STATUS } from '../constants/http-status';
+import sequelize  from '../config/db';
+import { User } from '../models/User';
 import jwt from 'jsonwebtoken';
+import { UserSocialHandle } from '../models/UserSocialHandle';
+import UserTweets from '../models/UserTweets';
 
 // At the top of your userService.ts file:
 import { User } from '../models/User';
@@ -124,7 +128,41 @@ class UserService {
     }
   }
 
-  // Add this method to your UserService class
+
+  async updateUserToEarlyUser(userId: string, tweetId: string) {
+    const user = await userRepository.findUserById(userId);
+  
+    if (!user) {
+      throw new AppError("User not found", 404);
+    }
+  
+    // Update user to early user
+    user.isEarlyUser = true;
+  
+    // Try to create tweet record
+    let tweetRecord;
+    try {
+      tweetRecord = await UserTweets.create({
+        tweetId,
+        userId,
+        isEarlyTweet: true,
+      });
+      console.log("Tweet Record Created:", tweetRecord);
+    } catch (error: any) {
+      console.error("Failed to create tweet record:", error.message);
+      // Optionally, log full error to a logging service here
+      throw new AppError("Failed to record tweet", 500);
+    }
+  
+    // Save the updated user
+    await userRepository.saveUser(user);
+  
+    return user;
+  }
+  
+
+
+// Add this method to your UserService class
 async findOrCreateUserBySocialId(
   provider: string, 
   socialId: string, 

@@ -58,6 +58,15 @@ export interface TwitterTokenResponse {
   refresh_token?: string;
 }
 
+
+export interface TwitterTokenResponse {
+  token_type: string;
+  expires_in: number;
+  access_token: string;
+  scope: string;
+  refresh_token?: string;
+}
+
 export interface TwitterUserResponse {
   data: {
     id: string;
