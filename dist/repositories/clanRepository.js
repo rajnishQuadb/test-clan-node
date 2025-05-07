@@ -88,6 +88,17 @@ class ClanRepository {
             if (!user) {
                 throw new error_handler_1.AppError('User not found.', http_status_1.HTTP_STATUS.NOT_FOUND);
             }
+            // check if user has any active clan and what is the date of joinings
+            if (user.activeClanId && user.clanJoinDate) {
+                // Calculate if the join date is older than a month
+                const oneMonthAgo = new Date();
+                oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+                // If join date is NOT older than a month, throw error
+                if (new Date(user.clanJoinDate) > oneMonthAgo) {
+                    throw new error_handler_1.AppError(`User joined clan ${user.activeClanId} on ${user.clanJoinDate}. Cannot join a new clan within 1 month of joining.`, http_status_1.HTTP_STATUS.BAD_REQUEST);
+                }
+                // If join date is older than a month, allow joining new clan (proceed without error)
+            }
             // update the activeClanId in the Users table
             await User_1.default.update({ activeClanId: clanId, clanJoinDate: new Date() }, // Set the activeClanId and clanJoinDate
             { where: { userId } } // Specify the condition to update the correct user

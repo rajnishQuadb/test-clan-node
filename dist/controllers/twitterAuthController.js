@@ -1,14 +1,4 @@
 "use strict";
-// import { Request, Response, NextFunction } from 'express';
-// import axios from 'axios';
-// import TwitterAuthService from '../services/twitterAuthService';
-// import { catchAsync } from '../utils/error-handler';
-// import { HTTP_STATUS } from '../constants/http-status';
-// import { encryptData } from '../utils/encryption';
-// import userService from '../services/userService';
-// import { AppError } from '../utils/error-handler';
-// import User from '../models/User'; // Add User model import
-// import UserSocialHandle from '../models/UserSocialHandle'; // Add UserSocialHandle model import
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -19,6 +9,7 @@ const error_handler_1 = require("../utils/error-handler");
 const http_status_1 = require("../constants/http-status");
 const error_handler_2 = require("../utils/error-handler");
 const twitterAuthService_1 = __importDefault(require("../services/twitterAuthService"));
+const referralService_1 = __importDefault(require("../services/referralService"));
 // In-memory store for temporary tokens (should be moved to Redis or DB in production)
 const temporaryTokenStore = new Map();
 // Initiate Twitter OAuth flow
@@ -42,9 +33,12 @@ exports.twitterLoginV2 = (0, error_handler_1.catchAsync)(async (req, res, next) 
 // Handle Twitter OAuth callback
 exports.twitterCallbackV2 = (0, error_handler_1.catchAsync)(async (req, res, next) => {
     const { oauth_token, oauth_verifier } = req.query;
+    const referralCode = req.cookies.referral_code; // Get referral code from cookie
     if (!oauth_token || !oauth_verifier) {
         throw new error_handler_2.AppError('Missing OAuth parameters', http_status_1.HTTP_STATUS.BAD_REQUEST);
     }
+    console.log("OAuth Token : ", oauth_token);
+    console.log("OAuth Verifier : ", oauth_verifier);
     const tempToken = oauth_token;
     const verifier = oauth_verifier;
     const stored = temporaryTokenStore.get(tempToken);
@@ -56,7 +50,13 @@ exports.twitterCallbackV2 = (0, error_handler_1.catchAsync)(async (req, res, nex
         const { user, accessToken, accessSecret } = await twitterAuthService_1.default.completeAuthentication(tempToken, verifier, stored);
         // Look up or create user in the database
         const { userId, isNewUser } = await twitterAuthService_1.default.findOrCreateUser(user, accessToken, accessSecret);
-        // Prepare response data
+        // Process referral if code exists and user is new
+        if (referralCode && isNewUser) {
+            await referralService_1.default.createReferral(referralCode, userId);
+            // Clear the referral cookie
+            res.clearCookie('referral_code');
+        }
+        // Prepare response data -- Earlier Used for app
         const responseData = {
             success: true,
             user: {
@@ -82,17 +82,26 @@ exports.twitterCallbackV2 = (0, error_handler_1.catchAsync)(async (req, res, nex
         next(error);
     }
 });
-// Test endpoint to tweet
 exports.postTweet = (0, error_handler_1.catchAsync)(async (req, res, next) => {
     const { userId, text, mediaId } = req.body;
+    console.log("Received request to post tweet:", { userId, text, mediaId });
     if (!userId || !text) {
         throw new error_handler_2.AppError('Missing required parameters', http_status_1.HTTP_STATUS.BAD_REQUEST);
     }
     try {
-        const tweet = await twitterAuthService_1.default.postTweet(userId, text, mediaId);
-        res.status(http_status_1.HTTP_STATUS.CREATED).json({
+        const tweetResponse = await twitterAuthService_1.default.postTweet(userId, text, mediaId);
+        // Process referral reward after successful tweet
+        await referralService_1.default.processReferralAfterTweet(userId);
+        // Print the entire tweet response to console
+        console.log("Twitter API Response:", JSON.stringify(tweetResponse, null, 2));
+        // Extract tweet ID from response
+        const tweetId = tweetResponse?.tweet?.data?.id || null;
+        console.log("Extracted Tweet ID:", tweetId);
+        return res.status(http_status_1.HTTP_STATUS.CREATED).json({
             success: true,
-            tweet
+            message: "Tweet posted successfully",
+            tweetId,
+            tweetData: tweetResponse?.tweet?.data || null,
         });
     }
     catch (error) {

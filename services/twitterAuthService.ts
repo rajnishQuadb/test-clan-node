@@ -1,11 +1,17 @@
-
 import { TwitterApi } from 'twitter-api-v2';
 import { v4 as uuidv4 } from 'uuid';
+import axios from 'axios'; // Add this import
 import { AppError } from '../utils/error-handler';
 import { HTTP_STATUS } from '../constants/http-status';
 import TwitterAuthV2Repository from '../repositories/twitterAuthRepository';
 import userRepository from '../repositories/userRepository';
+import { TwitterTokenResponse, TwitterUserResponse, TwitterUserDTO, TwitterEmailResponse } from '../types/twitterAuth';
+
 class TwitterAuthV2Service {
+  // API URLs for Twitter
+  private userURL = 'https://api.twitter.com/2/users/me';
+  private emailURL = 'https://api.twitter.com/2/users/me?user.fields=email';
+  
   // Complete Twitter authentication process
   async completeAuthentication(
     tempToken: string, 
@@ -67,7 +73,39 @@ class TwitterAuthV2Service {
           isNewUser: false
         };
       }
-      throw new AppError('Failed to exchange authorization code for tokens', HTTP_STATUS.INTERNAL_SERVER_ERROR);
+      
+      // Create new user since it doesn't exist
+      const userId = uuidv4();
+      
+      // Create user record and social handle
+      await TwitterAuthV2Repository.createUser({
+        userId,
+        web3UserName: `${twitterUser.screen_name}_${Date.now()}`,
+        twitterAccessToken: accessToken,
+        twitterRefreshToken: accessSecret,
+        isActiveUser: true
+      });
+      
+      await TwitterAuthV2Repository.createSocialHandle({
+        userId,
+        provider: 'twitter',
+        socialId: twitterUser.id_str,
+        username: twitterUser.screen_name,
+        displayName: twitterUser.name,
+        profilePicture: twitterUser.profile_image_url_https,
+        email: twitterUser.email
+      });
+      
+      return {
+        userId,
+        isNewUser: true
+      };
+    } catch (error) {
+      console.error('Error finding/creating user:', error);
+      throw new AppError(
+        error instanceof Error ? error.message : 'Failed to create or find user',
+        HTTP_STATUS.INTERNAL_SERVER_ERROR
+      );
     }
   }
   
@@ -84,42 +122,41 @@ class TwitterAuthV2Service {
         }
       });
       
-
-      // Create new user and social handle
-      const userId = uuidv4();
+      // Extract user data from response
+      const userData = userResponse.data.data;
       
-      // Create user - store Twitter tokens in the User model
-      await TwitterAuthV2Repository.createUser({
-        userId,
-        web3UserName: `${twitterUser.screen_name}_${Date.now()}`,
-        twitterAccessToken: accessToken,
-        twitterRefreshToken: accessSecret, // Store accessSecret as refreshToken
-        isActiveUser: true
-      });
+      // Try to get email if possible
+      let email: string | undefined;
+      try {
+        const emailResponse = await axios.get<TwitterEmailResponse>(this.emailURL, {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`
+          }
+        });
+        email = emailResponse.data.data.email;
+      } catch (emailError) {
+        console.log('Could not fetch email from Twitter:', emailError);
+      }
       
-      // Create social handle - without tokens (they're stored in User model)
-      await TwitterAuthV2Repository.createSocialHandle({
-        userId,
-        provider: 'twitter',
-        socialId: twitterUser.id_str,
-        username: twitterUser.screen_name,
-        displayName: twitterUser.name,
-        profilePicture: twitterUser.profile_image_url_https,
-        email: twitterUser.email // Include email if available
-      });
-      
+      // Return user data in correct format
       return {
-        userId,
-        isNewUser: true
+        twitterId: userData.id,
+        username: userData.username,
+        displayName: userData.name,
+        profilePicture: userData.profile_image_url,
+        email
       };
     } catch (error) {
-      console.error('Error finding/creating user:', error);
-      throw error;
+      console.error('Error getting user info:', error);
+      throw new AppError(
+        error instanceof Error ? error.message : 'Failed to get user info from Twitter',
+        HTTP_STATUS.INTERNAL_SERVER_ERROR
+      );
     }
   }
   
   // Post a tweet
-  async postTweet(userId: string, text: string, mediaId?: string , referralCode?: string) {
+  async postTweet(userId: string, text: string, mediaId?: string, referralCode?: string) {
     try {
       // Get user's tokens from User model
       const user = await TwitterAuthV2Repository.findUserById(userId);
@@ -147,23 +184,25 @@ class TwitterAuthV2Service {
       // Post the tweet
       const tweet = await client.v2.tweet(tweetPayload);
 
+      // Process referral if code provided and tweet was successful
       if (tweet?.data?.id && referralCode) {
-              const referrer = await userRepository.findUserByReferralCode(referralCode);
-              if (!referrer) {
-                throw new AppError('Invalid referral code', HTTP_STATUS.BAD_REQUEST);
-              }
-      
-              await userRepository.createReferral({
-                referrerUserId: referrer.userId,
-                referredUserId: userId,
-                referralCode,
-                joinedAt: new Date(),
-                rewardGiven: false,
-                tweetId: tweet.data.id
-              });
-            }
+        const referrer = await userRepository.findUserByReferralCode(referralCode);
+        if (!referrer) {
+          console.warn(`Invalid referral code: ${referralCode}`);
+        } else {
+          await userRepository.createReferral({
+            referrerUserId: referrer.userId,
+            referredUserId: userId,
+            referralCode,
+            joinedAt: new Date(),
+            rewardGiven: false,
+            tweetId: tweet.data.id
+          });
+          console.log(`Referral processed for user ${userId} with code ${referralCode}`);
+        }
+      }
 
-      return {tweet , referralCode};
+      return { tweet, referralCode };
     } catch (error) {
       console.error('Error posting tweet:', error);
       throw new AppError(
@@ -173,7 +212,6 @@ class TwitterAuthV2Service {
     }
   }
   
-
   // Upload media
   async uploadMedia(userId: string, mediaBuffer: Buffer, mimeType: string = 'image/jpeg') {
     try {
@@ -204,6 +242,7 @@ class TwitterAuthV2Service {
     }
   }
   
+
   // Verify user credentials
   async verifyCredentials(userId: string) {
     try {

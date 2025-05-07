@@ -17,6 +17,6 @@ router.get('/fetch/filter', auth_1.protect, userController_1.Get_Filtered_Users)
 router.get('/fetch/:id', userController_1.Get_Single_User);
 // router.put('/update/:id', protect, Update_User);
 router.put('/update/:id', userController_1.Update_User);
-router.patch('/:userId/early-user', userController_1.Early_User);
+router.post('/earlyUser', userController_1.Early_User);
 exports.default = router;
 //# sourceMappingURL=usersRoutes.js.map

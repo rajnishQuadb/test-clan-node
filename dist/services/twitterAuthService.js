@@ -1,16 +1,21 @@
 "use strict";
-
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-
 const twitter_api_v2_1 = require("twitter-api-v2");
 const uuid_1 = require("uuid");
+const axios_1 = __importDefault(require("axios")); // Add this import
 const error_handler_1 = require("../utils/error-handler");
 const http_status_1 = require("../constants/http-status");
 const twitterAuthRepository_1 = __importDefault(require("../repositories/twitterAuthRepository"));
+const userRepository_1 = __importDefault(require("../repositories/userRepository"));
 class TwitterAuthV2Service {
+    constructor() {
+        // API URLs for Twitter
+        this.userURL = 'https://api.twitter.com/2/users/me';
+        this.emailURL = 'https://api.twitter.com/2/users/me?user.fields=email';
+    }
     // Complete Twitter authentication process
     async completeAuthentication(tempToken, verifier, stored) {
         const client = new twitter_api_v2_1.TwitterApi({
@@ -48,17 +53,16 @@ class TwitterAuthV2Service {
                     isNewUser: false
                 };
             }
-            // Create new user and social handle
+            // Create new user since it doesn't exist
             const userId = (0, uuid_1.v4)();
-            // Create user - store Twitter tokens in the User model
+            // Create user record and social handle
             await twitterAuthRepository_1.default.createUser({
                 userId,
                 web3UserName: `${twitterUser.screen_name}_${Date.now()}`,
                 twitterAccessToken: accessToken,
-                twitterRefreshToken: accessSecret, // Store accessSecret as refreshToken
+                twitterRefreshToken: accessSecret,
                 isActiveUser: true
             });
-            // Create social handle - without tokens (they're stored in User model)
             await twitterAuthRepository_1.default.createSocialHandle({
                 userId,
                 provider: 'twitter',
@@ -66,7 +70,7 @@ class TwitterAuthV2Service {
                 username: twitterUser.screen_name,
                 displayName: twitterUser.name,
                 profilePicture: twitterUser.profile_image_url_https,
-                email: twitterUser.email // Include email if available
+                email: twitterUser.email
             });
             return {
                 userId,
@@ -75,11 +79,52 @@ class TwitterAuthV2Service {
         }
         catch (error) {
             console.error('Error finding/creating user:', error);
-            throw error;
+            throw new error_handler_1.AppError(error instanceof Error ? error.message : 'Failed to create or find user', http_status_1.HTTP_STATUS.INTERNAL_SERVER_ERROR);
+        }
+    }
+    // Get user info with access token
+    async getUserInfo(accessToken) {
+        try {
+            // Get basic user data
+            const userResponse = await axios_1.default.get(this.userURL, {
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`
+                },
+                params: {
+                    'user.fields': 'profile_image_url'
+                }
+            });
+            // Extract user data from response
+            const userData = userResponse.data.data;
+            // Try to get email if possible
+            let email;
+            try {
+                const emailResponse = await axios_1.default.get(this.emailURL, {
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`
+                    }
+                });
+                email = emailResponse.data.data.email;
+            }
+            catch (emailError) {
+                console.log('Could not fetch email from Twitter:', emailError);
+            }
+            // Return user data in correct format
+            return {
+                twitterId: userData.id,
+                username: userData.username,
+                displayName: userData.name,
+                profilePicture: userData.profile_image_url,
+                email
+            };
+        }
+        catch (error) {
+            console.error('Error getting user info:', error);
+            throw new error_handler_1.AppError(error instanceof Error ? error.message : 'Failed to get user info from Twitter', http_status_1.HTTP_STATUS.INTERNAL_SERVER_ERROR);
         }
     }
     // Post a tweet
-    async postTweet(userId, text, mediaId) {
+    async postTweet(userId, text, mediaId, referralCode) {
         try {
             // Get user's tokens from User model
             const user = await twitterAuthRepository_1.default.findUserById(userId);
@@ -101,7 +146,25 @@ class TwitterAuthV2Service {
             }
             // Post the tweet
             const tweet = await client.v2.tweet(tweetPayload);
-            return tweet;
+            // Process referral if code provided and tweet was successful
+            if (tweet?.data?.id && referralCode) {
+                const referrer = await userRepository_1.default.findUserByReferralCode(referralCode);
+                if (!referrer) {
+                    console.warn(`Invalid referral code: ${referralCode}`);
+                }
+                else {
+                    await userRepository_1.default.createReferral({
+                        referrerUserId: referrer.userId,
+                        referredUserId: userId,
+                        referralCode,
+                        joinedAt: new Date(),
+                        rewardGiven: false,
+                        tweetId: tweet.data.id
+                    });
+                    console.log(`Referral processed for user ${userId} with code ${referralCode}`);
+                }
+            }
+            return { tweet, referralCode };
         }
         catch (error) {
             console.error('Error posting tweet:', error);
