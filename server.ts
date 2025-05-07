@@ -19,6 +19,8 @@ import passport from 'passport';
 import session from 'express-session';
 import twitterAuthRoutes from './routes/twitterAuthRoutes';
 import path from 'path';
+import campaignRoutes from './routes/campaignRoutes';
+import './models/types';
 import './models/User';
 import './models/Campaign';
 import './models/CampaignLeaderBoard';
@@ -94,8 +96,7 @@ app.get('/api/v1/reset', async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Error resetting database' });
   }
 });
-// Register Twitter auth routes
-app.use('/api/auth', twitterAuthRoutes);
+
 
 // Mount routes
 app.use('/api/user', userRoutes);
@@ -103,14 +104,18 @@ app.use('/api/user', userRoutes);
 app.use('/api/auth', googleAuthRoutes);
 // Register Apple auth routes
 app.use('/api/auth', appleAuthRoutes);
+
+app.use('/api/campaign', campaignRoutes);
+
 // Register Twitter auth routes
 app.use('/api/auth', twitterAuthRoutes);
 // Register clans routes
 app.use('/api/clans', clanRoutes);
 // Register Twitter post routes
-app.use('/api/twitter', twitterPostRoutes);
+// app.use('/api/twitter', twitterPostRoutes);
 // Register Referral routes
 app.use('/api/referral', referralRoutes);
+
 // Not found middleware
 app.use((req: Request, res: Response, next: NextFunction) => {
   next(new AppError(`Cannot find ${req.originalUrl} on this server`, HTTP_STATUS.NOT_FOUND));

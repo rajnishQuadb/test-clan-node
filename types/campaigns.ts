@@ -74,6 +74,7 @@ export interface CreateCampaignRequest {
   rewardPool: number;
   startDate: Date;
   endDate: Date;
+  status?: boolean;
 }
 
 // For campaign join
