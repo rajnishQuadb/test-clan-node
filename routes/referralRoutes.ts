@@ -22,7 +22,7 @@ router.get('/redirect/:referralCode', (req, res) => {
     sameSite: 'lax'
   });
   // Redirect to main page
-  res.redirect(process.env.NEXT_PUBLIC_API_BASE_URL_FRONTEND || '/');
+  res.redirect(`${process.env.NEXT_PUBLIC_API_BASE_URL_FRONTEND}`);
 });
 
-export default router; 
+export default router;
