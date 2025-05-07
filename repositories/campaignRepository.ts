@@ -248,7 +248,7 @@ class CampaignRepository {
       }
       
       // Update points
-      leaderboardUser.points = points;
+      leaderboardUser.points += points;
       await leaderboardUser.save();
       
       // Recalculate rankings for all users in this leaderboard

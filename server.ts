@@ -97,6 +97,8 @@ app.get('/api', createUserLimiter, (req: Request, res: Response) => {
 app.get('/api/v1/dev', (req: Request, res: Response) => {
   res.send('CLANS-NODE-APP API v1 is running');
 });
+
+// ==   DELETE THIS IN PRODUCTION   == //
 // Route so reset the DB and start fresh (Only for development purposes)
 app.get('/api/v1/reset', async (req: Request, res: Response) => {
   try {
@@ -122,8 +124,6 @@ app.use('/api/campaign', campaignRoutes);
 app.use('/api/auth', twitterAuthRoutes);
 // Register clans routes
 app.use('/api/clans', clanRoutes);
-// Register Twitter post routes
-// app.use('/api/twitter', twitterPostRoutes);
 // Register Referral routes
 app.use('/api/referral', referralRoutes);
 
