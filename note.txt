@@ -1,21 +1,44 @@
-1.) morgan add in  dev dependencies remove 
-2.) docker for deployments 
+Development Notes & Requirements
 
-// user model changes
-1.) primary key web3 username field name web3 username 
-2.) create function modify and nomenclature  matching with routes and fucntion acc to operations perform by controller 
-3.) error handling pure adn each thing is checkd by the controller each field is taken by body 
-4.) packages which i added morgan , mongoose 
-5.)  make kilt to main not in object form 
-6.) no need of updsate kilt route sinugle route social working only for all data 
-7.) crypto js library used for encrypt the data and send the data to frontend to decrypt the data to show to user means not go in json format 
-8.) ensure proper error handling for encryption and decryption processes 
-9.) no need of campaign 
-10.) get Allcampaigns route ]
+General Infrastructure
 
+Move Morgan to development dependencies
+Implement Docker for deployments
+Initialize Docker container configuration
+Specify Node.js version in package.json
+User Model Changes
 
-11.) no need of clan to add in campaign clan is different 
-12.) when campaign create leaderboard automatically create 
-13.) campaign create then leaderboard create and id comes we store if with campaign ok 
-14.) pass the userId in join campaign  
-15.) docker intialize and nodejs version add in packages , swagger ui , zohrd validation and catch defined in one type from structs  comes in one form consts like 500 , 200 , and more , define erros diffrerntly like internal  make data and repo and controller ok like rep send the datta to contrioller and move jwt to auth.js and move dev dep[endices ok ] , typoes ki file differnt folder , caching and rate limiting
+Use web3Username as the primary key field
+Modify function nomenclature to match routes and controller operations
+Implement thorough error handling in controllers with request body validation
+Added packages: Morgan and Mongoose
+Authentication & Security
+
+Structure KILT identity in main form instead of object form
+Remove separate KILT update route - single social route handles all data
+Use CryptoJS library for response encryption before sending to frontend
+Implement proper error handling for encryption/decryption processes
+Move JWT functionality to auth.js utility
+API Structure
+
+Move development dependencies to appropriate section
+Create separate folders for type definitions
+Implement caching and rate limiting
+Use standardized HTTP status constants (200, 500, etc.)
+Define error types consistently (internal, validation, etc.)
+Follow repository pattern: repositories → services → controllers
+Campaign Management
+
+Remove campaign functionality
+Remove "Get All Campaigns" route
+Keep clan and campaign as separate entities
+Automatically create leaderboard when campaign is created
+Store leaderboard ID with campaign
+Include userId parameter in join campaign request
+Documentation & Validation
+
+Implement Swagger UI for API documentation
+Use Zod for validation
+Define catch handlers in one standard format
+Create structured type definitions
+This structured approach ensures clean architecture, proper separation of concerns, standardized error handling, and secure data transmission throughout the application.
