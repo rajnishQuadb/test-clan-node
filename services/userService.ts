@@ -8,6 +8,12 @@ import jwt from 'jsonwebtoken';
 import { UserSocialHandle } from '../models/UserSocialHandle';
 import UserTweets from '../models/UserTweets';
 
+// At the top of your userService.ts file:
+import { User } from '../models/User';
+import { UserSocialHandle } from '../models/UserSocialHandle';
+import sequelize  from '../config/db';
+
+
 class UserService {
     // Add this method to your UserService class
     generateToken(userId: string): string {
@@ -122,6 +128,7 @@ class UserService {
     }
   }
 
+
   async updateUserToEarlyUser(userId: string, tweetId: string) {
     const user = await userRepository.findUserById(userId);
   
@@ -155,7 +162,7 @@ class UserService {
   
 
 
-  // Add this method to your UserService class
+// Add this method to your UserService class
 async findOrCreateUserBySocialId(
   provider: string, 
   socialId: string, 

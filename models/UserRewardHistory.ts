@@ -48,8 +48,12 @@ UserRewardHistory.init(
     },
     campaignId: {
       type: DataTypes.UUID,
-      allowNull: false
-      // references to campaigns table would be added when that model exists
+      allowNull: false,
+      references: {
+        model: 'Campaigns',
+        key: 'campaignId'
+      },
+      onDelete: 'CASCADE'
     },
     reward: {
       type: DataTypes.DECIMAL(20, 8),  // Appropriate for most cryptocurrency values

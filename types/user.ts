@@ -1,4 +1,17 @@
 import { Request } from 'express';
+import 'express';
+
+declare global {
+  namespace Express {
+    interface User {
+      userId: string;
+      web3UserName: string;
+      id?: string;
+      username?: string;
+      provider?: string;
+    }
+  }
+}
 
 // User Social Handle DTO
 export interface UserSocialHandleDTO {

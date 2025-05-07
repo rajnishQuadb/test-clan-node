@@ -102,8 +102,11 @@ User.init(
     },
     activeClanId: {
       type: DataTypes.UUID,
-      allowNull: true
-      // references will be set up in associations
+      allowNull: true,
+      // references: {
+      //   model: 'Clans',
+      //   key: 'id'
+      // }
     },
     clanJoinDate: {
       type: DataTypes.DATE,

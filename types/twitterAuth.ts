@@ -50,14 +50,14 @@ export interface TwitterUserDTO {
   profilePicture?: string;
 }
 
-export interface TwitterTokens {
-  token: string;
-  tokenSecret: string;
+export interface TwitterTokenResponse {
+  token_type: string;
+  expires_in: number;
+  access_token: string;
+  scope: string;
+  refresh_token?: string;
 }
 
-// export interface TwitterAuthRequest extends Request {
-//   user?: TwitterUserDTO;
-// }
 
 export interface TwitterTokenResponse {
   token_type: string;

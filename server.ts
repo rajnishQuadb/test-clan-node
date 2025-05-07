@@ -8,6 +8,7 @@ import sequelize from './config/db';
 import './models/User'; // Import to initialize models
 // Import at the top of your server.ts or index.ts file
 import './models/associations';
+import setupAssociations from './models/associations';
 // Route imports
 import userRoutes from './routes/usersRoutes';
 import googleAuthRoutes from './routes/googleAuthRoutes';
@@ -18,6 +19,17 @@ import passport from 'passport';
 import session from 'express-session';
 import twitterAuthRoutes from './routes/twitterAuthRoutes';
 import path from 'path';
+import campaignRoutes from './routes/campaignRoutes';
+import './models/types';
+import './models/User';
+import './models/Campaign';
+import './models/CampaignLeaderBoard';
+import './models/CampaignLeaderBoardUser';
+import './models/CampaignParticipant';
+import {createUserLimiter} from './middleware/rateLimiter';
+setupAssociations(); // Call the function to set up all associations
+
+
 import clanRoutes from './routes/clansRoutes';
 import twitterPostRoutes from './routes/twitterPostRoutes';
 import referralRoutes from './routes/referralRoutes';
@@ -46,14 +58,25 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 });
 
 // Configure session and passport
+// app.use(session({
+//   secret: process.env.SESSION_SECRET || 'twitter-auth-secret',
+//   resave: false,
+//   saveUninitialized: false,
+//   cookie: { secure: process.env.NODE_ENV === 'production' }
+// }));
+
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'twitter-auth-secret',
+  secret: process.env.SESSION_SECRET || 'your-secret-key',
   resave: false,
   saveUninitialized: false,
-  cookie: { secure: process.env.NODE_ENV === 'production' }
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 60 * 60 * 1000 // 1 hour
+  }
 }));
-app.use(passport.initialize());
-app.use(passport.session());
+
+// app.use(passport.initialize());
+// app.use(passport.session());
 
 // Serve static HTML pages
 app.get('/privacyPolicy', (req, res) => {
@@ -68,7 +91,7 @@ app.get('/termsOfService', (req, res) => {
 app.get('/', (req: Request, res: Response) => {
   res.send('CLANS-NODE-APP is running');
 });
-app.get('/api', (req: Request, res: Response) => {
+app.get('/api', createUserLimiter, (req: Request, res: Response) => {
   res.send('CLANS-NODE-APP API is running');
 });
 
@@ -85,8 +108,7 @@ app.get('/api/v1/reset', async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Error resetting database' });
   }
 });
-// Register Twitter auth routes
-app.use('/api/auth', twitterAuthRoutes);
+
 
 // Mount routes
 app.use('/api/user', userRoutes);
@@ -94,14 +116,18 @@ app.use('/api/user', userRoutes);
 app.use('/api/auth', googleAuthRoutes);
 // Register Apple auth routes
 app.use('/api/auth', appleAuthRoutes);
+
+app.use('/api/campaign', campaignRoutes);
+
 // Register Twitter auth routes
 app.use('/api/auth', twitterAuthRoutes);
 // Register clans routes
 app.use('/api/clans', clanRoutes);
 // Register Twitter post routes
-app.use('/api/twitter', twitterPostRoutes);
+// app.use('/api/twitter', twitterPostRoutes);
 // Register Referral routes
 app.use('/api/referral', referralRoutes);
+
 // Not found middleware
 app.use((req: Request, res: Response, next: NextFunction) => {
   next(new AppError(`Cannot find ${req.originalUrl} on this server`, HTTP_STATUS.NOT_FOUND));

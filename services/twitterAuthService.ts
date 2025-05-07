@@ -1,3 +1,4 @@
+
 import { TwitterApi } from 'twitter-api-v2';
 import { v4 as uuidv4 } from 'uuid';
 import { AppError } from '../utils/error-handler';
@@ -66,7 +67,24 @@ class TwitterAuthV2Service {
           isNewUser: false
         };
       }
+      throw new AppError('Failed to exchange authorization code for tokens', HTTP_STATUS.INTERNAL_SERVER_ERROR);
+    }
+  }
+  
+  // Get user info with access token
+  async getUserInfo(accessToken: string): Promise<TwitterUserDTO> {
+    try {
+      // Get basic user data
+      const userResponse = await axios.get<TwitterUserResponse>(this.userURL, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`
+        },
+        params: {
+          'user.fields': 'profile_image_url'
+        }
+      });
       
+
       // Create new user and social handle
       const userId = uuidv4();
       
@@ -155,6 +173,7 @@ class TwitterAuthV2Service {
     }
   }
   
+
   // Upload media
   async uploadMedia(userId: string, mediaBuffer: Buffer, mimeType: string = 'image/jpeg') {
     try {
