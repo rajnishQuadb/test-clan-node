@@ -66,7 +66,25 @@ export default function setupAssociations() {
     });
     
   
-  // Remove Clan associations
+   // Add User-UserTweets association
+  //  User.hasMany(UserTweets, {
+  //   foreignKey: 'userId'
+  // });
+  
+  // UserTweets.belongsTo(User, {
+  //   foreignKey: 'userId'
+  // });
+
+  User.hasMany(UserTweets, {
+    foreignKey: 'userId',
+    as: 'tweets',  // Adding an alias is a good practice
+    onDelete: 'CASCADE'  // Optional, but recommended
+  });
+  
+  UserTweets.belongsTo(User, {
+    foreignKey: 'userId',
+    as: 'user'  // Adding an alias is a good practice
+  });
   
   // Campaign & CampaignLeaderBoard - One-to-One
   Campaign.belongsTo(CampaignLeaderBoard, { 

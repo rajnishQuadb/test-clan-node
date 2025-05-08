@@ -315,26 +315,37 @@ export const Early_User = catchAsync(
       const tweetIdParam = tweetId ? String(tweetId) : undefined;
       
       // Call the service method
-      const user = await userService.updateUserToEarlyUser(userId, tweetIdParam);
+      const {status , message  , user} = await userService.updateUserToEarlyUser(userId, tweetIdParam);
+      
+      if(user !== null){
+        const responseData = {
+          success: true,
+          message: message,
+        //  isNewEarlyUser: status, // true if newly updated, false if already an early user
+          data: {
+            userId:  user.userId,
+            referralCode: user.referralCode,
+            web3UserName: user.web3UserName,
+            DiD: user.DiD,
+            isActiveUser: user.isActiveUser,
+            isEarlyUser: user.isEarlyUser,
+            activeClanId: user.activeClanId,
+            updatedAt: user.updatedAt,
+          },
+        };
+        
 
-      // Prepare success response
-      const responseData = {
-        success: true,
-        message: "User updated to early user successfully",
-        data: {
-          userId: user.userId,
-          referralCode: user.referralCode,
-          web3UserName: user.web3UserName,
-          DiD: user.DiD,
-          isActiveUser: user.isActiveUser,
-          isEarlyUser: user.isEarlyUser,
-          activeClanId: user.activeClanId,
-          updatedAt: user.updatedAt,
-        },
-      };
+        return res.status(HTTP_STATUS.OK).json(responseData);
+      }
+      else{
+        throw new AppError(message, HTTP_STATUS.FORBIDDEN);
+      }
+      
+      // Prepare success response with the consistent data structure
+   
       
       // Return success response
-      return res.status(HTTP_STATUS.OK).json(responseData);
+      //return res.status(HTTP_STATUS.OK).json(responseData);
     } catch (error) {
       // Log detailed error information
       console.error("Error in Early_User controller:", error);
