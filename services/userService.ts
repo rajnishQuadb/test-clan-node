@@ -126,37 +126,129 @@ class UserService {
   }
 
 
-  async updateUserToEarlyUser(userId: string, tweetId: string) {
+  // async updateUserToEarlyUser(userId: string, tweetId: string) {
+  //   const user = await userRepository.findUserById(userId);
+  
+  //   if (!user) {
+  //     throw new AppError("User not found", 404);
+  //   }
+  //   // Update user to early user
+  //   user.isEarlyUser = true;
+  //   // Try to create tweet record
+  //   let tweetRecord;
+  //   try {
+  //     tweetRecord = await UserTweets.create({
+  //       tweetId,
+  //       userId,
+  //       isEarlyTweet: true,
+  //     });
+  //     console.log("Tweet Record Created:", tweetRecord);
+  //   } catch (error: any) {
+  //     console.error("Failed to create tweet record:", error.message);
+  //     // Optionally, log full error to a logging service here
+  //     throw new AppError("Failed to record tweett User is already an early user", 500);
+  //   }
+  
+  //   // Save the updated user
+  //   await userRepository.saveUser(user);
+  
+  //   return user;
+  // }
+  
+
+
+  // In userService.ts
+
+
+
+  async updateUserToEarlyUser(userId: string, tweetId?: string) {
+  try {
+    // Find the user first
     const user = await userRepository.findUserById(userId);
   
     if (!user) {
-      throw new AppError("User not found", 404);
+      throw new AppError("User not found", HTTP_STATUS.NOT_FOUND);
     }
-  
+    
+    // Check if user is already an early user
+    if (user.isEarlyUser) {
+      console.log(`User ${userId} is already an early user`);
+      
+      // Just return the user if they're already an early user
+      return user;
+    }
+    
     // Update user to early user
     user.isEarlyUser = true;
-  
-    // Try to create tweet record
-    let tweetRecord;
+    
+
+    
     try {
-      tweetRecord = await UserTweets.create({
-        tweetId,
-        userId,
-        isEarlyTweet: true,
-      });
-      console.log("Tweet Record Created:", tweetRecord);
+      // Save the updated user within the transaction
+      await userRepository.saveUser(user);
+      
+      // Only create tweet record if tweetId is provided
+      if (tweetId) {
+        // Check if this tweet is already recorded
+        const existingTweet = await UserTweets.findOne({
+          where: { tweetId },
+          include: [{
+            model: User,
+            as: 'user',
+            where: { userId }
+          }]
+        });
+        
+        if (existingTweet) {
+          console.log(`Tweet ${tweetId} is already recorded`);
+        } else {
+       
+          await UserTweets.create(
+            {
+              tweetId,
+              userId,
+              isEarlyTweet: true,
+            },
+           
+          );
+          console.log(`Tweet record created for tweet ID: ${tweetId}, user ID: ${userId}`);
+        }
+      }
+      
+  
+      console.log(`User ${userId} successfully updated to early user`);
+      
+      return user;
     } catch (error: any) {
-      console.error("Failed to create tweet record:", error.message);
-      // Optionally, log full error to a logging service here
-      throw new AppError("Failed to record tweet", 500);
+    
+      
+      console.error("Transaction failed:", error);
+      
+      if (error.name === 'SequelizeUniqueConstraintError') {
+        throw new AppError(
+          "This tweet has already been recorded for an early user", 
+          HTTP_STATUS.CONFLICT
+        );
+      }
+      
+      throw new AppError(
+        `Failed to update user to early user: ${error.message}`, 
+        HTTP_STATUS.INTERNAL_SERVER_ERROR
+      );
     }
-  
-    // Save the updated user
-    await userRepository.saveUser(user);
-  
-    return user;
+  } catch (error) {
+    // Catch any errors, including those from the transaction
+    if (error instanceof AppError) {
+      throw error; // Re-throw AppError instances
+    }
+    
+    console.error("Unexpected error in updateUserToEarlyUser:", error);
+    throw new AppError(
+      "An unexpected error occurred while updating user to early user", 
+      HTTP_STATUS.INTERNAL_SERVER_ERROR
+    );
   }
-  
+}
 
 
 // Add this method to your UserService class
