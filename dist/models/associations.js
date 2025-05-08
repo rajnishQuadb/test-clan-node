@@ -5,13 +5,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = setupAssociations;
 const User_1 = __importDefault(require("./User"));
-const UserRewardHistory_1 = __importDefault(require("./UserRewardHistory"));
-const UserWallet_1 = __importDefault(require("./UserWallet"));
 const UserSocialHandle_1 = __importDefault(require("./UserSocialHandle"));
+const UserWallet_1 = __importDefault(require("./UserWallet"));
+const UserRewardHistory_1 = __importDefault(require("./UserRewardHistory"));
 const Campaign_1 = __importDefault(require("./Campaign"));
 const CampaignParticipant_1 = __importDefault(require("./CampaignParticipant"));
 const CampaignLeaderBoard_1 = __importDefault(require("./CampaignLeaderBoard"));
 const CampaignLeaderBoardUser_1 = __importDefault(require("./CampaignLeaderBoardUser"));
+const Referral_1 = __importDefault(require("./Referral")); // Make sure this is imported
 // Setup all model associations
 function setupAssociations() {
     // User related associations
@@ -38,6 +39,23 @@ function setupAssociations() {
     });
     UserRewardHistory_1.default.belongsTo(User_1.default, {
         foreignKey: 'userId'
+    });
+    // Add User-Referral associations
+    User_1.default.hasMany(Referral_1.default, {
+        foreignKey: 'referrerUserId',
+        as: 'referralsGiven'
+    });
+    User_1.default.hasMany(Referral_1.default, {
+        foreignKey: 'referredUserId',
+        as: 'referralsReceived'
+    });
+    Referral_1.default.belongsTo(User_1.default, {
+        foreignKey: 'referrerUserId',
+        as: 'referrer'
+    });
+    Referral_1.default.belongsTo(User_1.default, {
+        foreignKey: 'referredUserId',
+        as: 'referred'
     });
     // Remove Clan associations
     // Campaign & CampaignLeaderBoard - One-to-One
