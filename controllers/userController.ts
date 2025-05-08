@@ -256,33 +256,101 @@ export const Get_Filtered_Users = catchAsync(
 );
 
 // upate user to the early user
+// export const Early_User = catchAsync(
+//   async (req: Request, res: Response, next: NextFunction) => {
+//     try{
+//     const { userId, tweetId } = req.query;
+
+//     if (!userId || typeof userId !== 'string') {
+//       throw new AppError('Missing or invalid userID in query', HTTP_STATUS.BAD_REQUEST);
+//     }
+
+//     console.log("tweetId", tweetId);
+//     console.log(typeof tweetId, tweetId);
+
+//     const user = await userService.updateUserToEarlyUser(userId, tweetId as string);
+
+//     res.status(HTTP_STATUS.OK).json({
+//       success: true,
+//       message: "User updated to early user successfully",
+//       data: {
+//         userId: user.userId,
+//         referralCode: user.referralCode,
+//         web3UserName: user.web3UserName,
+//         DiD: user.DiD,
+//         isActiveUser: user.isActiveUser,
+//         isEarlyUser: user.isEarlyUser,
+//         activeClanId: user.activeClanId,
+//         updatedAt: user.updatedAt,
+//       },
+//     });
+//   } catch (error) {
+//     console.error("Error in Early_User controller:", error);
+//     if (error instanceof AppError) {
+//       return next(error);
+//     }
+//     return next(new AppError('Failed to update user to early user', HTTP_STATUS.INTERNAL_SERVER_ERROR));
+//   }
+// }
+// );
+
+
 export const Early_User = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { userId, tweetId } = req.query;
+    try {
+      // Get userId and tweetId from query parameters
+      const { userId, tweetId } = req.query;
 
-    if (!userId || typeof userId !== 'string') {
-      throw new AppError('Missing or invalid userID in query', HTTP_STATUS.BAD_REQUEST);
+      // Validate userId
+      if (!userId || typeof userId !== 'string') {
+        throw new AppError('Missing or invalid userId in query parameters', HTTP_STATUS.BAD_REQUEST);
+      }
+      
+      // Log the incoming request details
+      console.log(`Processing early user request for userId: ${userId}, tweetId: ${tweetId}`);
+      console.log("tweetId type:", typeof tweetId);
+      
+      // Handle the optional tweetId parameter
+      // If tweetId is provided but it's not a string, convert it to string
+      const tweetIdParam = tweetId ? String(tweetId) : undefined;
+      
+      // Call the service method
+      const user = await userService.updateUserToEarlyUser(userId, tweetIdParam);
+
+      // Prepare success response
+      const responseData = {
+        success: true,
+        message: "User updated to early user successfully",
+        data: {
+          userId: user.userId,
+          referralCode: user.referralCode,
+          web3UserName: user.web3UserName,
+          DiD: user.DiD,
+          isActiveUser: user.isActiveUser,
+          isEarlyUser: user.isEarlyUser,
+          activeClanId: user.activeClanId,
+          updatedAt: user.updatedAt,
+        },
+      };
+      
+      // Return success response
+      return res.status(HTTP_STATUS.OK).json(responseData);
+    } catch (error) {
+      // Log detailed error information
+      console.error("Error in Early_User controller:", error);
+      
+      // Handle AppError instances
+      if (error instanceof AppError) {
+        return next(error);
+      }
+      
+      // Handle unexpected errors
+      return next(
+        new AppError(
+          'Failed to update user to early user', 
+          HTTP_STATUS.INTERNAL_SERVER_ERROR
+        )
+      );
     }
-
-    console.log("tweetId", tweetId);
-    console.log(typeof tweetId, tweetId);
-
-    const user = await userService.updateUserToEarlyUser(userId, tweetId as string);
-
-    res.status(HTTP_STATUS.OK).json({
-      success: true,
-      message: "User updated to early user successfully",
-      data: {
-        userId: user.userId,
-        referralCode: user.referralCode,
-        web3UserName: user.web3UserName,
-        DiD: user.DiD,
-        isActiveUser: user.isActiveUser,
-        isEarlyUser: user.isEarlyUser,
-        activeClanId: user.activeClanId,
-        updatedAt: user.updatedAt,
-      },
-    });
   }
 );
-
