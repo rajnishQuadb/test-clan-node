@@ -149,13 +149,17 @@ class UserService {
             // Check if user is already an early user
             if (user.isEarlyUser) {
                 console.log(`User ${userId} is already an early user`);
-                // Just return the user if they're already an early user
-                return user;
+                // Return consistent object structure with user data and status
+                return {
+                    user: null,
+                    message: `User ${userId} is already an early user`,
+                    status: false
+                };
             }
             // Update user to early user
             user.isEarlyUser = true;
             try {
-                // Save the updated user within the transaction
+                // Save the updated user
                 await userRepository_1.default.saveUser(user);
                 // Only create tweet record if tweetId is provided
                 if (tweetId) {
@@ -181,7 +185,12 @@ class UserService {
                     }
                 }
                 console.log(`User ${userId} successfully updated to early user`);
-                return user;
+                // Return consistent object structure with user data and status
+                return {
+                    user: user,
+                    message: "User updated to early user successfully",
+                    status: true
+                };
             }
             catch (error) {
                 console.error("Transaction failed:", error);
@@ -192,7 +201,7 @@ class UserService {
             }
         }
         catch (error) {
-            // Catch any errors, including those from the transaction
+            // Catch any errors
             if (error instanceof error_handler_1.AppError) {
                 throw error; // Re-throw AppError instances
             }

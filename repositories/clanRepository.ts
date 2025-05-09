@@ -65,6 +65,14 @@ class ClanRepository {
 async addUserToClan(userId: string, clanId: string): Promise<any> {
   try {
     // Check if the user is already a participant in the clan
+    if(!userId || !clanId) {
+      throw new AppError('User ID and Clan ID are required.', HTTP_STATUS.BAD_REQUEST);
+    }
+
+ 
+
+  
+
     const existingParticipant = await clanParticipant.findOne({
       where: { userId, clanId },
     });
@@ -73,13 +81,15 @@ async addUserToClan(userId: string, clanId: string): Promise<any> {
       throw new AppError('User is already a participant in this clan.', HTTP_STATUS.BAD_REQUEST);
     }
 
+
+
     // Retrieve the LeaderBoardId for the given clanId
     const clanLeaderBoard = await ClanLeaderBoard.findOne({
       where: { clanId },
     });
 
     if (!clanLeaderBoard) {
-      throw new AppError('Clan does not have a corresponding leaderboard.', HTTP_STATUS.NOT_FOUND);
+      throw new AppError('Clan not found.', HTTP_STATUS.NOT_FOUND);
     }
 
     const leaderBoardId = clanLeaderBoard.leaderBoardId;  // Get the leaderBoardId

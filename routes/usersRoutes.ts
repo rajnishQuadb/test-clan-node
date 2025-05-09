@@ -15,7 +15,7 @@ const router = express.Router();
 router.post('/create', Create_User);
 
 // IMPORTANT: More specific routes first
-router.get('/fetch/all', protect, Get_All_Users);
+router.get('/fetch/all', Get_All_Users);
 router.get('/fetch/filter', protect, Get_Filtered_Users);
 
 // Then parameter-based routes
