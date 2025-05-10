@@ -10,7 +10,7 @@ const router = express_1.default.Router();
 // Make the create endpoint public for initial user creation
 router.post('/create', userController_1.Create_User);
 // IMPORTANT: More specific routes first
-router.get('/fetch/all', auth_1.protect, userController_1.Get_All_Users);
+router.get('/fetch/all', userController_1.Get_All_Users);
 router.get('/fetch/filter', auth_1.protect, userController_1.Get_Filtered_Users);
 // Then parameter-based routes
 // router.get('/fetch/:id', protect, Get_Single_User);
