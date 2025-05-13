@@ -20,10 +20,16 @@ export const Create_User = catchAsync(
         userId: user.userId,
         web3UserName: user.web3UserName,
         DiD: user.DiD,
-        isActiveUser: user.isActiveUser,
+        twitterAccessToken: user.twitterAccessToken,
+        twitterRefreshToken: user.twitterRefreshToken,
         isEarlyUser: user.isEarlyUser,
+        isActiveUser: user.isActiveUser,
         activeClanId: user.activeClanId,
-        createdAt: user.createdAt,
+        clanJoinDate: user.clanJoinDate,
+        referralCode: user.referralCode,
+        socialHandles: user.socialHandles,
+        wallets: user.wallets,
+        rewardHistory: user.rewardHistory,
       },
     };
 
