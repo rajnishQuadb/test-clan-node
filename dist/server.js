@@ -17,10 +17,12 @@ const associations_1 = __importDefault(require("./models/associations"));
 const usersRoutes_1 = __importDefault(require("./routes/usersRoutes"));
 const googleAuthRoutes_1 = __importDefault(require("./routes/googleAuthRoutes"));
 const appleAuthRoutes_1 = __importDefault(require("./routes/appleAuthRoutes"));
+const discordAuthRoutes_1 = __importDefault(require("./routes/discordAuthRoutes"));
 const error_handler_1 = require("./utils/error-handler");
 const http_status_1 = require("./constants/http-status");
 const express_session_1 = __importDefault(require("express-session"));
 const twitterAuthRoutes_1 = __importDefault(require("./routes/twitterAuthRoutes"));
+const twitterV2Routes_1 = __importDefault(require("./routes/twitterV2Routes"));
 const path_1 = __importDefault(require("path"));
 const campaignRoutes_1 = __importDefault(require("./routes/campaignRoutes"));
 require("./models/types");
@@ -88,6 +90,7 @@ app.get('/api', rateLimiter_1.createUserLimiter, (req, res) => {
 app.get('/api/v1/dev', (req, res) => {
     res.send('CLANS-NODE-APP API v1 is running');
 });
+// ==   DELETE THIS IN PRODUCTION   == //
 // Route so reset the DB and start fresh (Only for development purposes)
 app.get('/api/v1/reset', async (req, res) => {
     try {
@@ -105,13 +108,15 @@ app.use('/api/user', usersRoutes_1.default);
 app.use('/api/auth', googleAuthRoutes_1.default);
 // Register Apple auth routes
 app.use('/api/auth', appleAuthRoutes_1.default);
+// Discord auth routes
+app.use('/api/auth', discordAuthRoutes_1.default);
 app.use('/api/campaign', campaignRoutes_1.default);
 // Register Twitter auth routes
 app.use('/api/auth', twitterAuthRoutes_1.default);
+// Register Twitter auth routes
+app.use('/api/V2', twitterV2Routes_1.default);
 // Register clans routes
 app.use('/api/clans', clansRoutes_1.default);
-// Register Twitter post routes
-// app.use('/api/twitter', twitterPostRoutes);
 // Register Referral routes
 app.use('/api/referral', referralRoutes_1.default);
 // Not found middleware

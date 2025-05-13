@@ -1,0 +1,1 @@
+{"version":3,"file":"discordAuthRoutes.js","sourceRoot":"","sources":["../../routes/discordAuthRoutes.ts"],"names":[],"mappings":";;AAAA,qCAAiC;AACjC,gFAAqF;AAErF,MAAM,MAAM,GAAG,IAAA,gBAAM,GAAE,CAAC;AAExB,MAAM,CAAC,GAAG,CAAC,UAAU,EAAE,oCAAY,CAAC,CAAC;AACrC,MAAM,CAAC,GAAG,CAAC,mBAAmB,EAAE,uCAAe,CAAC,CAAC,CAAC,6CAA6C;AAE/F,kBAAe,MAAM,CAAC"}

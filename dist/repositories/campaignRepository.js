@@ -228,7 +228,7 @@ class CampaignRepository {
                 throw new error_handler_1.AppError('User not found in leaderboard', http_status_1.HTTP_STATUS.NOT_FOUND);
             }
             // Update points
-            leaderboardUser.points = points;
+            leaderboardUser.points += points;
             await leaderboardUser.save();
             // Recalculate rankings for all users in this leaderboard
             await this.recalculateRankings(leaderBoardId);
