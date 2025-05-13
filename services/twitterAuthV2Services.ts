@@ -1,17 +1,10 @@
 import { TwitterApi } from 'twitter-api-v2';
 import { v4 as uuidv4 } from 'uuid';
-import axios from 'axios'; // Add this import
 import { AppError } from '../utils/error-handler';
 import { HTTP_STATUS } from '../constants/http-status';
 import TwitterAuthV2Repository from '../repositories/twitterAuthRepository';
 import userRepository from '../repositories/userRepository';
-import { TwitterTokenResponse, TwitterUserResponse, TwitterUserDTO, TwitterEmailResponse } from '../types/twitterAuth';
-
 class TwitterAuthV2Service {
-  // API URLs for Twitter
-  private userURL = 'https://api.twitter.com/2/users/me';
-  private emailURL = 'https://api.twitter.com/2/users/me?user.fields=email';
-  
   // Complete Twitter authentication process
   async completeAuthentication(
     tempToken: string, 
@@ -58,8 +51,11 @@ class TwitterAuthV2Service {
   ) {
     try {
       // Check if user already exists
-      const existingUser = await TwitterAuthV2Repository.findBySocialId(twitterUser.id);
+
+      const existingUser = await TwitterAuthV2Repository.findBySocialId(twitterUser.data.id);
       
+      console.log("existing user ", existingUser);
+
       if (existingUser) {
         // Update existing user with new tokens
         await TwitterAuthV2Repository.updateTokens(
@@ -70,32 +66,34 @@ class TwitterAuthV2Service {
         
         return {
           userId: existingUser.userId,
-          isNewUser: false,
-          message : 'User Already Participated'
+          isNewUser: false
         };
       }
+
+      console.log("update ho gya");
       
-      // Create new user since it doesn't exist
+      // Create new user and social handle
       const userId = uuidv4();
       
-      // Create user record and social handle
-      await TwitterAuthV2Repository.createUser({
-        userId,
-        web3UserName: `${twitterUser.screen_name}_${Date.now()}`,
-        twitterAccessToken: accessToken,
-        twitterRefreshToken: accessSecret,
-        isActiveUser: true
-      });
+      // Create user - store Twitter tokens in the User model
+      // await TwitterAuthV2Repository.createUser({
+      //   userId: twitterUser.data.id,
+      //   web3UserName: `${twitterUser.screen_name}_${Date.now()}`,
+      //   twitterAccessToken: accessToken,
+      //   twitterRefreshToken: accessSecret, // Store accessSecret as refreshToken
+      //   isActiveUser: true
+      // });
       
-      await TwitterAuthV2Repository.createSocialHandle({
-        userId,
-        provider: 'twitter',
-        socialId: twitterUser.id,
-        username: twitterUser.username,
-        displayName: twitterUser.name,
-        profilePicture: twitterUser.profile_image_url,
-        email: twitterUser.email
-      });
+      // // Create social handle - without tokens (they're stored in User model)
+      // await TwitterAuthV2Repository.createSocialHandle({
+      //   userId:twitterUser.data.id,
+      //   provider: 'twitter',
+      //   socialId: twitterUser.data.id,
+      //   username: twitterUser.data.username,
+      //   displayName: twitterUser.data.name,
+      //   profilePicture: "na",
+      //   email: "na" // Include email if available
+      // });
       
       return {
         userId,
@@ -103,61 +101,12 @@ class TwitterAuthV2Service {
       };
     } catch (error) {
       console.error('Error finding/creating user:', error);
-      throw new AppError(
-        error instanceof Error ? error.message : 'Failed to create or find user',
-        HTTP_STATUS.INTERNAL_SERVER_ERROR
-      );
-    }
-  }
-  
-  // Get user info with access token
-  async getUserInfo(accessToken: string): Promise<TwitterUserDTO> {
-    try {
-      // Get basic user data
-      const userResponse = await axios.get<TwitterUserResponse>(this.userURL, {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`
-        },
-        params: {
-          'user.fields': 'profile_image_url'
-        }
-      });
-      
-      // Extract user data from response
-      const userData = userResponse.data.data;
-      
-      // Try to get email if possible
-      let email: string | undefined;
-      try {
-        const emailResponse = await axios.get<TwitterEmailResponse>(this.emailURL, {
-          headers: {
-            'Authorization': `Bearer ${accessToken}`
-          }
-        });
-        email = emailResponse.data.data.email;
-      } catch (emailError) {
-        console.log('Could not fetch email from Twitter:', emailError);
-      }
-      
-      // Return user data in correct format
-      return {
-        twitterId: userData.id,
-        username: userData.username,
-        displayName: userData.name,
-        profilePicture: userData.profile_image_url,
-        email
-      };
-    } catch (error) {
-      console.error('Error getting user info:', error);
-      throw new AppError(
-        error instanceof Error ? error.message : 'Failed to get user info from Twitter',
-        HTTP_STATUS.INTERNAL_SERVER_ERROR
-      );
+      throw error;
     }
   }
   
   // Post a tweet
-  async postTweet(userId: string, text: string, mediaId?: string, referralCode?: string) {
+  async postTweet(userId: string, text: string, mediaId?: string , referralCode?: string) {
     try {
       // Get user's tokens from User model
       const user = await TwitterAuthV2Repository.findUserById(userId);
@@ -166,14 +115,7 @@ class TwitterAuthV2Service {
         throw new AppError('User not authenticated with Twitter', HTTP_STATUS.UNAUTHORIZED);
       }
       
-      // Create Twitter client with user's tokens
-      const client = new TwitterApi({
-        appKey: process.env.TWITTER_CONSUMER_KEY!,
-        appSecret: process.env.TWITTER_CONSUMER_SECRET!,
-        accessToken: user.twitterAccessToken,
-        accessSecret: user.twitterRefreshToken, // Using the refresh token as access secret
-      });
-      
+      const client = new TwitterApi(user.twitterAccessToken);
       // Prepare tweet payload
       const tweetPayload: any = { text };
       
@@ -185,32 +127,47 @@ class TwitterAuthV2Service {
       // Post the tweet
       const tweet = await client.v2.tweet(tweetPayload);
 
-      // Process referral if code provided and tweet was successful
       if (tweet?.data?.id && referralCode) {
-        const referrer = await userRepository.findUserByReferralCode(referralCode);
-        if (!referrer) {
-          console.warn(`Invalid referral code: ${referralCode}`);
-        } else {
-          await userRepository.createReferral({
-            referrerUserId: referrer.userId,
-            referredUserId: userId,
-            referralCode,
-            joinedAt: new Date(),
-            rewardGiven: false,
-            tweetId: tweet.data.id
-          });
-          console.log(`Referral processed for user ${userId} with code ${referralCode}`);
-        }
-      }
+              const referrer = await userRepository.findUserByReferralCode(referralCode);
+              if (!referrer) {
+                throw new AppError('Invalid referral code', HTTP_STATUS.BAD_REQUEST);
+              }
+      
+              await userRepository.createReferral({
+                referrerUserId: referrer.userId,
+                referredUserId: userId,
+                referralCode,
+                joinedAt: new Date(),
+                rewardGiven: false,
+                tweetId: tweet.data.id
+              });
+            }
 
-      return { tweet, referralCode };
-    } catch (error) {
-      console.error('Error posting tweet:', error);
+      return {tweet , referralCode};
+    } catch (error: unknown) {
+      if (
+        typeof error === 'object' &&
+        error !== null &&
+        'data' in error &&
+        typeof (error as any).data === 'object'
+      ) {
+        const structuredError = error as { data: { detail?: string; status?: number; title?: string } };
+        console.error('Twitter API Error (structured):', JSON.stringify(structuredError.data, null, 2));
+    
+        throw new AppError(
+          structuredError.data.detail || 'Failed to post tweet',
+          structuredError.data.status || HTTP_STATUS.INTERNAL_SERVER_ERROR
+        );
+      } else {
+        console.error('Unknown Error posting tweet V2:', error);
+      }
+    
       throw new AppError(
         error instanceof Error ? error.message : 'Failed to post tweet',
         HTTP_STATUS.INTERNAL_SERVER_ERROR
       );
     }
+    
   }
   
   // Upload media
@@ -218,21 +175,18 @@ class TwitterAuthV2Service {
     try {
       // Get user's tokens from User model
       const user = await TwitterAuthV2Repository.findUserById(userId);
-      
+      console.log("media buffer ", mediaBuffer);
       if (!user || !user.twitterAccessToken || !user.twitterRefreshToken) {
         throw new AppError('User not authenticated with Twitter', HTTP_STATUS.UNAUTHORIZED);
       }
+
+      console.log("user ", user);
       
       // Create Twitter client with user's tokens
-      const client = new TwitterApi({
-        appKey: process.env.TWITTER_CONSUMER_KEY!,
-        appSecret: process.env.TWITTER_CONSUMER_SECRET!,
-        accessToken: user.twitterAccessToken,
-        accessSecret: user.twitterRefreshToken, // Using the refresh token as access secret
-      });
-      
+      const client = new TwitterApi(user.twitterAccessToken);
       // Upload the media
-      const mediaId = await client.v1.uploadMedia(mediaBuffer, { mimeType });
+      // const mediaId = await client.v1.uploadMedia(mediaBuffer, { mimeType });
+      const mediaId = await client.v2.uploadMedia(mediaBuffer, { media_type: "image/jpeg" })
       return mediaId;
     } catch (error) {
       console.error('Error uploading media:', error);
@@ -243,7 +197,6 @@ class TwitterAuthV2Service {
     }
   }
   
-
   // Verify user credentials
   async verifyCredentials(userId: string) {
     try {

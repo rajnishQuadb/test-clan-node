@@ -22,6 +22,7 @@ const error_handler_1 = require("./utils/error-handler");
 const http_status_1 = require("./constants/http-status");
 const express_session_1 = __importDefault(require("express-session"));
 const twitterAuthRoutes_1 = __importDefault(require("./routes/twitterAuthRoutes"));
+const twitterV2Routes_1 = __importDefault(require("./routes/twitterV2Routes"));
 const path_1 = __importDefault(require("path"));
 const campaignRoutes_1 = __importDefault(require("./routes/campaignRoutes"));
 require("./models/types");
@@ -112,6 +113,8 @@ app.use('/api/auth', discordAuthRoutes_1.default);
 app.use('/api/campaign', campaignRoutes_1.default);
 // Register Twitter auth routes
 app.use('/api/auth', twitterAuthRoutes_1.default);
+// Register Twitter auth routes
+app.use('/api/V2', twitterV2Routes_1.default);
 // Register clans routes
 app.use('/api/clans', clansRoutes_1.default);
 // Register Referral routes

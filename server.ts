@@ -19,6 +19,7 @@ import { HTTP_STATUS } from './constants/http-status';
 import passport from 'passport';
 import session from 'express-session';
 import twitterAuthRoutes from './routes/twitterAuthRoutes';
+import twitterV2Routes from './routes/twitterV2Routes';
 import path from 'path';
 import campaignRoutes from './routes/campaignRoutes';
 import './models/types';
@@ -144,6 +145,10 @@ app.use('/api/campaign', campaignRoutes);
 
 // Register Twitter auth routes
 app.use('/api/auth', twitterAuthRoutes);
+
+// Register Twitter auth routes
+app.use('/api/V2', twitterV2Routes);
+
 // Register clans routes
 app.use('/api/clans', clanRoutes);
 // Register Referral routes
