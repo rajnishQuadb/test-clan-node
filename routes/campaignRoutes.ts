@@ -5,8 +5,10 @@ import {
   Get_Single_Campaign, 
   Get_All_Campaigns, 
   Get_Filtered_Campaigns,
-  Update_Leaderboard_Points
+  Update_Leaderboard_Points,
+  Get_User_Joined_Campaigns
 } from '../controllers/campaignController';
+
 
 const router = Router();
 
@@ -18,6 +20,10 @@ router.post('/join', Join_Campaign);
 
 // Route to get all campaigns
 router.get('/fetch/all', Get_All_Campaigns);
+
+// Route to get campaigns joined by a user
+router.get('/fetch/user-joined', Get_User_Joined_Campaigns);
+
 
 
 // Route to get filtered campaigns
