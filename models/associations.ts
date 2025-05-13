@@ -1,14 +1,21 @@
 import User from './User';
-import UserRewardHistory from './UserRewardHistory';
-import UserWallet from './UserWallet';
 import UserSocialHandle from './UserSocialHandle';
+import UserWallet from './UserWallet';
+import UserRewardHistory from './UserRewardHistory';
+import Clans from './Clans';
+import clanParticipant from './clanParticipant';
+import clanLeaderBoard from './clanLeaderBoard';
+import clanLeaderBoardUser from './clanLeaderBoardUser';
 import Campaign from './Campaign';
 import CampaignParticipant from './CampaignParticipant';
 import CampaignLeaderBoard from './CampaignLeaderBoard';
 import CampaignLeaderBoardUser from './CampaignLeaderBoardUser';
+import Referral from './Referral'; // Make sure this is imported
+import UserTweets from './UserTweets'; // Add this import if not present
 
 // Setup all model associations
 export default function setupAssociations() {
+  
   // User related associations
   User.hasMany(UserSocialHandle, {
     foreignKey: 'userId',
@@ -36,8 +43,48 @@ export default function setupAssociations() {
   UserRewardHistory.belongsTo(User, {
     foreignKey: 'userId'
   });
+
+    // Add User-Referral associations
+    User.hasMany(Referral, {
+      foreignKey: 'referrerUserId',
+      as: 'referralsGiven'
+    });
+    
+    User.hasMany(Referral, {
+      foreignKey: 'referredUserId',
+      as: 'referralsReceived'
+    });
+    
+    Referral.belongsTo(User, {
+      foreignKey: 'referrerUserId',
+      as: 'referrer'
+    });
+    
+    Referral.belongsTo(User, {
+      foreignKey: 'referredUserId',
+      as: 'referred'
+    });
+    
   
-  // Remove Clan associations
+   // Add User-UserTweets association
+  //  User.hasMany(UserTweets, {
+  //   foreignKey: 'userId'
+  // });
+  
+  // UserTweets.belongsTo(User, {
+  //   foreignKey: 'userId'
+  // });
+
+  User.hasMany(UserTweets, {
+    foreignKey: 'userId',
+    as: 'tweets',  // Adding an alias is a good practice
+    onDelete: 'CASCADE'  // Optional, but recommended
+  });
+  
+  UserTweets.belongsTo(User, {
+    foreignKey: 'userId',
+    as: 'user'  // Adding an alias is a good practice
+  });
   
   // Campaign & CampaignLeaderBoard - One-to-One
   Campaign.belongsTo(CampaignLeaderBoard, { 

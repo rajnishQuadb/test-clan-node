@@ -113,31 +113,101 @@ class UserService {
             throw new error_handler_1.AppError('Failed to fetch filtered users', http_status_1.HTTP_STATUS.INTERNAL_SERVER_ERROR);
         }
     }
+    // async updateUserToEarlyUser(userId: string, tweetId: string) {
+    //   const user = await userRepository.findUserById(userId);
+    //   if (!user) {
+    //     throw new AppError("User not found", 404);
+    //   }
+    //   // Update user to early user
+    //   user.isEarlyUser = true;
+    //   // Try to create tweet record
+    //   let tweetRecord;
+    //   try {
+    //     tweetRecord = await UserTweets.create({
+    //       tweetId,
+    //       userId,
+    //       isEarlyTweet: true,
+    //     });
+    //     console.log("Tweet Record Created:", tweetRecord);
+    //   } catch (error: any) {
+    //     console.error("Failed to create tweet record:", error.message);
+    //     // Optionally, log full error to a logging service here
+    //     throw new AppError("Failed to record tweett User is already an early user", 500);
+    //   }
+    //   // Save the updated user
+    //   await userRepository.saveUser(user);
+    //   return user;
+    // }
+    // In userService.ts
     async updateUserToEarlyUser(userId, tweetId) {
-        const user = await userRepository_1.default.findUserById(userId);
-        if (!user) {
-            throw new error_handler_1.AppError("User not found", 404);
-        }
-        // Update user to early user
-        user.isEarlyUser = true;
-        // Try to create tweet record
-        let tweetRecord;
         try {
-            tweetRecord = await UserTweets_1.default.create({
-                tweetId,
-                userId,
-                isEarlyTweet: true,
-            });
-            console.log("Tweet Record Created:", tweetRecord);
+            // Find the user first
+            const user = await userRepository_1.default.findUserById(userId);
+            if (!user) {
+                throw new error_handler_1.AppError("User not found", http_status_1.HTTP_STATUS.NOT_FOUND);
+            }
+            // Check if user is already an early user
+            if (user.isEarlyUser) {
+                console.log(`User ${userId} is already an early user`);
+                // Return consistent object structure with user data and status
+                return {
+                    user: null,
+                    message: `User ${userId} is already an early user`,
+                    status: false
+                };
+            }
+            // Update user to early user
+            user.isEarlyUser = true;
+            try {
+                // Save the updated user
+                await userRepository_1.default.saveUser(user);
+                // Only create tweet record if tweetId is provided
+                if (tweetId) {
+                    // Check if this tweet is already recorded
+                    const existingTweet = await UserTweets_1.default.findOne({
+                        where: { tweetId },
+                        include: [{
+                                model: User_1.User,
+                                as: 'user',
+                                where: { userId }
+                            }]
+                    });
+                    if (existingTweet) {
+                        console.log(`Tweet ${tweetId} is already recorded`);
+                    }
+                    else {
+                        await UserTweets_1.default.create({
+                            tweetId,
+                            userId,
+                            isEarlyTweet: true,
+                        });
+                        console.log(`Tweet record created for tweet ID: ${tweetId}, user ID: ${userId}`);
+                    }
+                }
+                console.log(`User ${userId} successfully updated to early user`);
+                // Return consistent object structure with user data and status
+                return {
+                    user: user,
+                    message: "User updated to early user successfully",
+                    status: true
+                };
+            }
+            catch (error) {
+                console.error("Transaction failed:", error);
+                if (error.name === 'SequelizeUniqueConstraintError') {
+                    throw new error_handler_1.AppError("This tweet has already been recorded for an early user", http_status_1.HTTP_STATUS.CONFLICT);
+                }
+                throw new error_handler_1.AppError(`Failed to update user to early user: ${error.message}`, http_status_1.HTTP_STATUS.INTERNAL_SERVER_ERROR);
+            }
         }
         catch (error) {
-            console.error("Failed to create tweet record:", error.message);
-            // Optionally, log full error to a logging service here
-            throw new error_handler_1.AppError("Failed to record tweet", 500);
+            // Catch any errors
+            if (error instanceof error_handler_1.AppError) {
+                throw error; // Re-throw AppError instances
+            }
+            console.error("Unexpected error in updateUserToEarlyUser:", error);
+            throw new error_handler_1.AppError("An unexpected error occurred while updating user to early user", http_status_1.HTTP_STATUS.INTERNAL_SERVER_ERROR);
         }
-        // Save the updated user
-        await userRepository_1.default.saveUser(user);
-        return user;
     }
     // Add this method to your UserService class
     async findOrCreateUserBySocialId(provider, socialId, userData) {

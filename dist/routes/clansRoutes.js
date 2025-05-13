@@ -12,5 +12,8 @@ router.get('/fetch/:clanId', clanController_1.Get_Single_Clan); // Route for fet
 router.post('/JoinClan', clanController_1.Join_Clan); // Route for joining a clan
 router.put('/update/:clanId', clanController_1.Update_Clan); // Route for updating a clan by its ID
 router.delete('/delete/:clanId', clanController_1.Delete_Clan); // Route for deleting a clan by its ID
+// For testing purposes, you can uncomment the following lines
+// router.get('/fetch/:clanId', validateUUID('clanId'), Get_Single_Clan);
+// router.post('/join', validateJoinClanRequest, Join_Clan);
 exports.default = router;
 //# sourceMappingURL=clansRoutes.js.map

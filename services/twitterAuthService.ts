@@ -70,7 +70,8 @@ class TwitterAuthV2Service {
         
         return {
           userId: existingUser.userId,
-          isNewUser: false
+          isNewUser: false,
+          message : 'User Already Participated'
         };
       }
       

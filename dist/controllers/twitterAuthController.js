@@ -49,7 +49,25 @@ exports.twitterCallbackV2 = (0, error_handler_1.catchAsync)(async (req, res, nex
         // Complete the authentication process
         const { user, accessToken, accessSecret } = await twitterAuthService_1.default.completeAuthentication(tempToken, verifier, stored);
         // Look up or create user in the database
-        const { userId, isNewUser } = await twitterAuthService_1.default.findOrCreateUser(user, accessToken, accessSecret);
+        const { userId, isNewUser, message } = await twitterAuthService_1.default.findOrCreateUser(user, accessToken, accessSecret);
+        if (!isNewUser) {
+            return res.status(http_status_1.HTTP_STATUS.OK).json({
+                success: true,
+                message,
+                user: {
+                    userId,
+                    twitterId: user.id_str,
+                    username: user.screen_name,
+                    displayName: user.name,
+                    profilePicture: user.profile_image_url_https,
+                    isNewUser
+                },
+                tokens: {
+                    accessToken,
+                    accessSecret
+                }
+            });
+        }
         // Process referral if code exists and user is new
         if (referralCode && isNewUser) {
             await referralService_1.default.createReferral(referralCode, userId);
@@ -82,6 +100,66 @@ exports.twitterCallbackV2 = (0, error_handler_1.catchAsync)(async (req, res, nex
         next(error);
     }
 });
+// export const twitterCallbackV2 = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+//   const { oauth_token, oauth_verifier } = req.query;
+//   const referralCode = req.cookies.referral_code;
+//   if (!oauth_token || !oauth_verifier) {
+//     throw new AppError('Missing OAuth parameters', HTTP_STATUS.BAD_REQUEST);
+//   }
+//   console.log("OAuth Token : ", oauth_token);
+//   console.log("OAuth Verifier : ", oauth_verifier);
+//   const tempToken = oauth_token as string;
+//   const verifier = oauth_verifier as string;
+//   const stored = temporaryTokenStore.get(tempToken);
+//   if (!stored) {
+//     throw new AppError('Invalid or expired token', HTTP_STATUS.BAD_REQUEST);
+//   }
+//   try {
+//     // Complete the authentication process
+//     const { user, accessToken, accessSecret } = 
+//       await TwitterAuthV2Service.completeAuthentication(tempToken, verifier, stored);
+//     // Look up or create user in the database
+//     const { userId, isNewUser, message } = await TwitterAuthV2Service.findOrCreateUser(user, accessToken, accessSecret);
+//     // Clean up temporary token store
+//     temporaryTokenStore.delete(tempToken);
+//     // Process referral if code exists and user is new
+//     if (referralCode && isNewUser) {
+//       await referralService.createReferral(referralCode, userId);
+//       // Clear the referral cookie
+//       res.clearCookie('referral_code');
+//     }
+//     // Prepare user data for response
+//     const userData = {
+//       userId,
+//       twitterId: user.id_str,
+//       username: user.screen_name,
+//       displayName: user.name,
+//       profilePicture: user.profile_image_url_https,
+//       isNewUser
+//     };
+//     // For API clients, return JSON with proper message
+//     if (req.headers.accept?.includes('application/json')) {
+//       return res.status(HTTP_STATUS.OK).json({
+//         success: true,
+//         message: message || (isNewUser ? 'User created successfully' : 'Logged in successfully'),
+//         user: userData,
+//         tokens: { accessToken, accessSecret }
+//       });
+//     }
+//     // For web clients, redirect with appropriate URL parameters
+//     const redirectUrl = new URL(`${process.env.FRONTEND_URL || 'https://clans-landing.10on10studios.com'}/startRoaring/${userId}`);
+//     // Add query parameters to indicate if user already participated
+//     if (!isNewUser) {
+//       redirectUrl.searchParams.append('status', 'existing');
+//       redirectUrl.searchParams.append('message', encodeURIComponent(message || 'User Already Participated'));
+//     }
+//     // Redirect to frontend
+//     res.redirect(redirectUrl.toString());
+//   } catch (error) {
+//     console.error('Twitter authentication error:', error);
+//     next(error);
+//   }
+// });
 exports.postTweet = (0, error_handler_1.catchAsync)(async (req, res, next) => {
     const { userId, text, mediaId } = req.body;
     console.log("Received request to post tweet:", { userId, text, mediaId });

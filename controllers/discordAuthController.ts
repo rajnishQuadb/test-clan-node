@@ -40,7 +40,7 @@ export const discordCallback = catchAsync(
     const accessToken: string = (response.data as { access_token: string })
       .access_token;
 
-    console.log("Access Token:", accessToken);
+    // console.log("Access Token:", accessToken);
 
     interface DiscordUser {
       id: string;
@@ -59,21 +59,31 @@ export const discordCallback = catchAsync(
       }
     );
 
-    const userData = {
-      success: true,
-      user: {
-        id: userResponse.data.id,
-        name: userResponse.data.global_name,
-        email: userResponse.data.email,
-        picture: userResponse.data.avatar,
-      },
-    };
+    // const userData = {
+    //   provider: "discord",
+    //   id: userResponse.data.id,
+    //   name: userResponse.data.global_name,
+    //   email: userResponse.data.email,
+    //   picture: userResponse.data.avatar,
+    // };
+
+    const linkParams = new URLSearchParams({
+      provider: 'discord',
+      socialId: userResponse.data.id,
+      email: userResponse.data.email,
+      displayName: userResponse.data.global_name,
+      profilePicture: userResponse.data.avatar,
+    });
+
+    const deepLinkUrl = `${process.env.APP_SCHEMA_LINK}?${linkParams.toString()}`;
 
     const user = userResponse.data;
 
     // Create deep link URL for the mobile app
-    const deepLinkData = encodeURIComponent(JSON.stringify(userData));
-    const deepLinkUrl = `${process.env.APP_SCHEMA_LINK}?data=${deepLinkData}`;
+    // const deepLinkData = encodeURIComponent(JSON.stringify(userData));
+    // const deepLinkUrl = `${process.env.APP_SCHEMA_LINK}?data=${deepLinkData}`;
+    // com.app.clans://Screens/UserNameScreen?
+    // const deepLinkUrl = `${process.env.APP_SCHEMA_LINK}?provider=${userData.provider}&socialId=${userData.id}&email=${userData.email}&displayName=${userData.name}&profilePicture=${userData.picture}`;
 
     // Render an HTML page with user details and a button to return to the app
     const html = `

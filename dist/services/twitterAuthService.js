@@ -50,7 +50,8 @@ class TwitterAuthV2Service {
                 await twitterAuthRepository_1.default.updateTokens(existingUser.userId, accessToken, accessSecret);
                 return {
                     userId: existingUser.userId,
-                    isNewUser: false
+                    isNewUser: false,
+                    message: 'User Already Participated'
                 };
             }
             // Create new user since it doesn't exist
