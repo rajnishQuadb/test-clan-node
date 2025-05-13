@@ -25,11 +25,11 @@ class CampaignService {
                 endDate: campaign.endDate,
                 status: campaign.status,
                 createdAt: campaign.createdAt,
-                updatedAt: campaign.updatedAt
+                updatedAt: campaign.updatedAt,
             };
         }
         catch (error) {
-            console.error('Error in createCampaign service:', error);
+            console.error("Error in createCampaign service:", error);
             throw error;
         }
     }
@@ -37,10 +37,10 @@ class CampaignService {
     async joinCampaign(joinRequest) {
         try {
             await campaignRepository_1.default.joinCampaign(joinRequest.campaignId, joinRequest.userId);
-            return { message: 'Successfully joined campaign' };
+            return { message: "Successfully joined campaign" };
         }
         catch (error) {
-            console.error('Error in joinCampaign service:', error);
+            console.error("Error in joinCampaign service:", error);
             throw error;
         }
     }
@@ -63,23 +63,25 @@ class CampaignService {
                 status: campaign.status,
                 createdAt: campaign.createdAt,
                 updatedAt: campaign.updatedAt,
-                participants: campaign.participants?.map(p => ({
+                participants: campaign.participants?.map((p) => ({
                     campaignParticipantId: p.campaignParticipantId,
                     campaignId: p.campaignId,
                     userId: p.userId,
                     joinedAt: p.joinedAt,
                     createdAt: p.createdAt,
                     updatedAt: p.updatedAt,
-                    user: p.user ? {
-                        userId: p.user.userId,
-                        web3UserName: p.user.web3UserName
-                    } : undefined
-                }))
+                    user: p.user
+                        ? {
+                            userId: p.user.userId,
+                            web3UserName: p.user.web3UserName,
+                        }
+                        : undefined,
+                })),
             };
             return campaignDTO;
         }
         catch (error) {
-            console.error('Error in getCampaignById service:', error);
+            console.error("Error in getCampaignById service:", error);
             throw error;
         }
     }
@@ -88,7 +90,7 @@ class CampaignService {
         try {
             const { campaigns, total, pages } = await campaignRepository_1.default.getAllCampaigns(page, limit);
             // Map to DTO
-            const campaignDTOs = campaigns.map(campaign => ({
+            const campaignDTOs = campaigns.map((campaign) => ({
                 campaignId: campaign.campaignId,
                 leaderBoardId: campaign.leaderBoardId ?? undefined,
                 banner: campaign.banner,
@@ -101,16 +103,16 @@ class CampaignService {
                 endDate: campaign.endDate,
                 status: campaign.status,
                 createdAt: campaign.createdAt,
-                updatedAt: campaign.updatedAt
+                updatedAt: campaign.updatedAt,
             }));
             return {
                 campaigns: campaignDTOs,
                 total,
-                pages
+                pages,
             };
         }
         catch (error) {
-            console.error('Error in getAllCampaigns service:', error);
+            console.error("Error in getAllCampaigns service:", error);
             throw error;
         }
     }
@@ -120,17 +122,18 @@ class CampaignService {
             // Validate and convert status
             let campaignStatus;
             switch (status.toLowerCase()) {
-                case 'active':
+                case "active":
                     campaignStatus = campaigns_1.CampaignStatus.ACTIVE;
                     break;
-                case 'upcoming':
+                case "upcoming":
                     campaignStatus = campaigns_1.CampaignStatus.UPCOMING;
                     break;
-                case 'past':
-                case 'expired':
+                case "inactive":
+                case "past":
+                case "expired":
                     campaignStatus = campaigns_1.CampaignStatus.PAST;
                     break;
-                case 'all':
+                case "all":
                     campaignStatus = campaigns_1.CampaignStatus.ALL;
                     break;
                 default:
@@ -138,7 +141,7 @@ class CampaignService {
             }
             const { campaigns, total, pages } = await campaignRepository_1.default.getFilteredCampaigns(campaignStatus, page, limit);
             // Map to DTO
-            const campaignDTOs = campaigns.map(campaign => ({
+            const campaignDTOs = campaigns.map((campaign) => ({
                 campaignId: campaign.campaignId,
                 leaderBoardId: campaign.leaderBoardId ?? undefined,
                 banner: campaign.banner,
@@ -151,17 +154,17 @@ class CampaignService {
                 endDate: campaign.endDate,
                 status: campaign.status,
                 createdAt: campaign.createdAt,
-                updatedAt: campaign.updatedAt
+                updatedAt: campaign.updatedAt,
             }));
             return {
                 campaigns: campaignDTOs,
                 total,
                 pages,
-                filter: status.toLowerCase()
+                filter: status.toLowerCase(),
             };
         }
         catch (error) {
-            console.error('Error in getFilteredCampaigns service:', error);
+            console.error("Error in getFilteredCampaigns service:", error);
             throw error;
         }
     }
@@ -169,11 +172,49 @@ class CampaignService {
     async updateLeaderboardPoints(updateRequest) {
         try {
             await campaignRepository_1.default.updateLeaderboardPoints(updateRequest.leaderBoardId, updateRequest.userId, updateRequest.points);
-            return { message: 'Leaderboard points updated successfully' };
+            return { message: "Leaderboard points updated successfully" };
         }
         catch (error) {
-            console.error('Error in updateLeaderboardPoints service:', error);
+            console.error("Error in updateLeaderboardPoints service:", error);
             throw error;
+        }
+    }
+    // Get campaigns joined by a user with pagination
+    async getUserJoinedCampaigns(userId, status, page = 1, limit = 10) {
+        try {
+            // Validate UUID format
+            if (userId) {
+                const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+                if (!uuidRegex.test(userId)) {
+                    throw new error_handler_1.AppError('Invalid User ID format', http_status_1.HTTP_STATUS.BAD_REQUEST);
+                }
+            }
+            else {
+                throw new error_handler_1.AppError('User ID is required', http_status_1.HTTP_STATUS.BAD_REQUEST);
+            }
+            // Validate status if provided
+            if (status && !['active', 'inactive', 'true', 'false', 'all'].includes(status)) {
+                throw new error_handler_1.AppError('Invalid status parameter. Use "active", "inactive", or "all"', http_status_1.HTTP_STATUS.BAD_REQUEST);
+            }
+            // Validate pagination parameters
+            if (page < 1) {
+                throw new error_handler_1.AppError('Page must be at least 1', http_status_1.HTTP_STATUS.BAD_REQUEST);
+            }
+            if (limit < 1 || limit > 100) {
+                throw new error_handler_1.AppError('Limit must be between 1 and 100', http_status_1.HTTP_STATUS.BAD_REQUEST);
+            }
+            // Get campaigns from repository with pagination
+            const { campaigns, total, pages } = await campaignRepository_1.default.getUserJoinedCampaigns(userId, status, page, limit);
+            return { campaigns, total, pages };
+        }
+        catch (error) {
+            // Pass through AppErrors
+            if (error instanceof error_handler_1.AppError) {
+                throw error;
+            }
+            // Log and wrap other errors
+            console.error('Service error in getUserJoinedCampaigns:', error);
+            throw new error_handler_1.AppError('Failed to retrieve user joined campaigns', http_status_1.HTTP_STATUS.INTERNAL_SERVER_ERROR);
         }
     }
 }

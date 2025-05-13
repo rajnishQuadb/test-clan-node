@@ -4,6 +4,7 @@ import CampaignParticipant from "../models/CampaignParticipant";
 import CampaignLeaderBoard from "../models/CampaignLeaderBoard";
 import CampaignLeaderBoardUser from "../models/CampaignLeaderBoardUser";
 import User from "../models/User";
+import UserSocialHandle from "../models/UserSocialHandle";
 import {
   CampaignDTO,
   CampaignStatus,
@@ -179,34 +180,59 @@ class CampaignRepository {
 
   // Get all campaigns with pagination
   async getAllCampaigns(
-    page: number = 1,
-    limit: number = 10
-  ): Promise<{ campaigns: Campaign[]; total: number; pages: number }> {
-    try {
-      const offset = (page - 1) * limit;
+  page: number = 1,
+  limit: number = 10
+): Promise<{ campaigns: Campaign[]; total: number; pages: number }> {
+  try {
+    const offset = (page - 1) * limit;
 
-      const { count, rows } = await Campaign.findAndCountAll({
-        limit,
-        offset,
-        order: [["createdAt", "DESC"]],
-        include: [
-          {
-            model: CampaignLeaderBoard,
-            as: "leaderBoard",
-          },
-        ],
-      });
+    const { count, rows } = await Campaign.findAndCountAll({
+      limit,
+      offset,
+      order: [["createdAt", "DESC"]],
+      include: [
+        {
+          model: CampaignLeaderBoard,
+          as: "leaderBoard",
+        },
+        {
+          model: CampaignParticipant,
+          as: "participants",
+          include: [
+            {
+              model: User,
+              as: "user",
+              attributes: ["userId", "web3UserName"],
+              include: [
+                {
+                  model: UserSocialHandle,
+                  as: "socialHandles",
+                  attributes: ["profilePicture"],
+                  limit: 1,
+                  where: {
+                    profilePicture: {
+                      [Op.ne]: null
+                    }
+                  },
+                  required: false
+                }
+              ]
+            }
+          ]
+        }
+      ],
+    });
 
-      return {
-        campaigns: rows,
-        total: count,
-        pages: Math.ceil(count / limit),
-      };
-    } catch (error) {
-      console.error("Error getting all campaigns:", error);
-      throw error;
-    }
+    return {
+      campaigns: rows,
+      total: count,
+      pages: Math.ceil(count / limit),
+    };
+  } catch (error) {
+    console.error("Error getting all campaigns:", error);
+    throw error;
   }
+}
 
   // Get filtered campaigns
   async getFilteredCampaigns(
@@ -439,6 +465,146 @@ class CampaignRepository {
   // }
   // Get campaigns joined by a specific user with optional status filter
 // Get campaigns joined by a specific user with optional status filter and pagination
+// async getUserJoinedCampaigns(
+//   userId: string,
+//   status?: string,
+//   page: number = 1,
+//   limit: number = 10
+// ): Promise<{ campaigns: any[], total: number, pages: number }> {
+//   try {
+//     // Validate input
+//     if (!userId) {
+//       throw new AppError("User ID is required", HTTP_STATUS.BAD_REQUEST);
+//     }
+
+//     // Check if user exists
+//     const userExists = await User.findByPk(userId);
+//     if (!userExists) {
+//       throw new AppError("User not found", HTTP_STATUS.NOT_FOUND);
+//     }
+
+//     // Calculate offset for pagination
+//     const offset = (page - 1) * limit;
+
+//     // Build the query with joins, conditions, and pagination
+//     const queryOptions: any = {
+//       where: { userId },
+//       include: [
+//         {
+//           model: Campaign,
+//           as: "campaign",
+//           attributes: [
+//             "campaignId",
+//             "title",
+//             "description",
+//             "startDate",
+//             "endDate",
+//             "status",
+//             "banner",
+//             "leaderBoardId",
+//             "rewardPool",
+//             "organiserLogo",
+//             "organiserLink"
+//           ],
+//         },
+//       ],
+//       order: [["joinedAt", "DESC"]],
+//       limit,
+//       offset
+//     };
+
+//     // Add status filter if provided and not 'all'
+//     if (status && status !== "all") {
+//       if (!queryOptions.include[0].where) {
+//         queryOptions.include[0].where = {};
+//       }
+//       queryOptions.include[0].where.status =
+//         status === "true" || status === "active" ? true : false;
+//     }
+
+//     // Count total records (for pagination)
+//     const totalCount = await CampaignParticipant.count({
+//       where: { userId },
+//       include: [
+//         {
+//           model: Campaign,
+//           as: "campaign",
+//           where: status && status !== "all" 
+//             ? { status: status === "true" || status === "active" ? true : false } 
+//             : undefined
+//         },
+//       ],
+//     });
+
+//     // Execute the query using CampaignParticipant model
+//     const participants = await CampaignParticipant.findAll(queryOptions);
+
+//     // Calculate real-time status for each campaign
+//     const now = new Date();
+//     const result = participants
+//       .map((participant) => {
+//         const campaign = participant.get("campaign") as any;
+
+//         if (!campaign) {
+//           return null;
+//         }
+
+//         // Calculate real-time status based on dates
+//         let realTimeStatus = "upcoming";
+//         if (now > new Date(campaign.endDate)) {
+//           realTimeStatus = "completed";
+//         } else if (now >= new Date(campaign.startDate)) {
+//           realTimeStatus = "active";
+//         }
+
+//         return {
+//           participantId: participant.campaignParticipantId,
+//           joinedAt: participant.joinedAt,
+//           campaign: {
+//             ...campaign,
+//             imageUrl: campaign.banner, // Map banner to imageUrl for API compatibility
+//             realTimeStatus,
+//           },
+//         };
+//       })
+//       .filter(Boolean);
+
+//     // Calculate total pages
+//     const totalPages = Math.ceil(totalCount / limit);
+
+//     return {
+//       campaigns: result,
+//       total: totalCount,
+//       pages: totalPages
+//     };
+//   } catch (error: unknown) {
+//     console.error("Error fetching joined campaigns:", error);
+    
+//     // Handle database column errors
+//     if (typeof error === 'object' && error !== null && 
+//         'name' in error && error.name === 'SequelizeDatabaseError' && 
+//         'parent' in error && error.parent && 
+//         typeof error.parent === 'object' && error.parent !== null &&
+//         'code' in error.parent && (error.parent as any).code === '42703') {
+      
+//       console.error("Column not found error. Check your model definition and database schema.");
+//       throw new AppError(
+//         "Database schema mismatch. Please contact support.",
+//         HTTP_STATUS.INTERNAL_SERVER_ERROR
+//       );
+//     }
+    
+//     if (error instanceof AppError) {
+//       throw error;
+//     }
+    
+//     throw new AppError(
+//       "Failed to fetch joined campaigns",
+//       HTTP_STATUS.INTERNAL_SERVER_ERROR
+//     );
+//   }
+// }
+
 async getUserJoinedCampaigns(
   userId: string,
   status?: string,
@@ -513,41 +679,144 @@ async getUserJoinedCampaigns(
     // Execute the query using CampaignParticipant model
     const participants = await CampaignParticipant.findAll(queryOptions);
 
+    // Get all campaign IDs for fetching participants
+    const campaignIds = participants
+  .map(p => p.get('campaign')?.campaignId)
+  .filter((id): id is string => typeof id === 'string');
+
+    // Fetch participants for these campaigns separately
+    const campaignParticipants = campaignIds.length > 0 ? 
+        await CampaignParticipant.findAll({
+    where: { 
+      campaignId: { [Op.in]: campaignIds }  // Use Op.in for array values
+    },
+    limit: 100, // Limit to a reasonable number
+    include: [
+      {
+        model: User,
+        as: "user",
+        attributes: ["userId", "web3UserName"],
+        include: [
+          {
+            model: UserSocialHandle,
+            as: "socialHandles",
+            attributes: ["profilePicture"],
+            limit: 1,
+            required: false
+          }
+        ]
+      }
+    ]
+  }) : [];
+
+    // Create a lookup map of participants by campaign ID
+    const participantsMap = new Map();
+    campaignParticipants.forEach(participant => {
+      const campaignId = participant.campaignId;
+      if (!participantsMap.has(campaignId)) {
+        participantsMap.set(campaignId, []);
+      }
+      participantsMap.get(campaignId).push(participant);
+    });
+
+    // Fetch leaderboard data for this user for all campaigns
+    const userLeaderboardData = await CampaignLeaderBoardUser.findAll({
+      where: { userId },
+      attributes: ['leaderBoardId', 'ranking', 'points']
+    });
+
+    // Create a lookup map for the leaderboard data
+    const leaderboardMap = new Map();
+    userLeaderboardData.forEach(item => {
+      leaderboardMap.set(item.leaderBoardId, {
+        ranking: item.ranking,
+        points: item.points
+      });
+    });
+
     // Calculate real-time status for each campaign
     const now = new Date();
-    const result = participants
-      .map((participant) => {
-        const campaign = participant.get("campaign") as any;
-
-        if (!campaign) {
-          return null;
-        }
-
-        // Calculate real-time status based on dates
-        let realTimeStatus = "upcoming";
-        if (now > new Date(campaign.endDate)) {
-          realTimeStatus = "completed";
-        } else if (now >= new Date(campaign.startDate)) {
-          realTimeStatus = "active";
-        }
-
+    const plainResults = participants.map((participant) => {
+      const campaignRaw = participant.get("campaign");
+      
+      // Skip if no campaign found
+      if (!campaignRaw) return null;
+      
+      // Convert Sequelize instance to plain object to avoid circular references
+      const campaign = campaignRaw.toJSON();
+      
+      // Calculate real-time status based on dates
+      let realTimeStatus = "upcoming";
+      if (now > new Date(campaign.endDate)) {
+        realTimeStatus = "completed";
+      } else if (now >= new Date(campaign.startDate)) {
+        realTimeStatus = "active";
+      }
+      
+      // Get participants for this campaign
+      const campaignParticipantsList = participantsMap.get(campaign.campaignId) || [];
+      
+      // Map participants to DTOs
+      const mappedParticipants = campaignParticipantsList.map((p: CampaignParticipant) => {
+        // Skip invalid data
+        if (!p.user) return null;
+        
+        // Get profile picture if available
+        const profilePicture = p.user.socialHandles && 
+                              p.user.socialHandles.length > 0 ? 
+                              p.user.socialHandles[0].profilePicture : 
+                              undefined;
+        
         return {
-          participantId: participant.campaignParticipantId,
-          joinedAt: participant.joinedAt,
-          campaign: {
-            ...campaign,
-            imageUrl: campaign.banner, // Map banner to imageUrl for API compatibility
-            realTimeStatus,
-          },
+          campaignParticipantId: p.campaignParticipantId,
+          campaignId: p.campaignId,
+          userId: p.userId,
+          joinedAt: p.joinedAt,
+          user: {
+            userId: p.user.userId,
+            web3UserName: p.user.web3UserName,
+            profilePicture: profilePicture
+          }
         };
-      })
-      .filter(Boolean);
+      }).filter(Boolean);
+      
+      // Get leaderboard data for this campaign if it exists
+      const leaderboardData = campaign.leaderBoardId ? 
+        leaderboardMap.get(campaign.leaderBoardId) : null;
+      
+      // Return fully sanitized result
+      return {
+        participantId: participant.campaignParticipantId,
+        joinedAt: participant.joinedAt,
+        campaign: {
+          campaignId: campaign.campaignId,
+          title: campaign.title,
+          description: campaign.description,
+          startDate: campaign.startDate,
+          endDate: campaign.endDate,
+          status: campaign.status,
+          banner: campaign.banner,
+          imageUrl: campaign.banner, // Map banner to imageUrl for API compatibility
+          leaderBoardId: campaign.leaderBoardId,
+          rewardPool: campaign.rewardPool,
+          organiserLogo: campaign.organiserLogo,
+          organiserLink: campaign.organiserLink,
+          realTimeStatus,
+          participants: mappedParticipants,
+          participantsCount: mappedParticipants.length,
+          leaderboard: leaderboardData ? {
+            ranking: leaderboardData.ranking,
+            points: leaderboardData.points
+          } : null
+        }
+      };
+    }).filter(Boolean);
 
     // Calculate total pages
     const totalPages = Math.ceil(totalCount / limit);
 
     return {
-      campaigns: result,
+      campaigns: plainResults,
       total: totalCount,
       pages: totalPages
     };

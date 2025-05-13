@@ -14,7 +14,9 @@ export interface CampaignDTO {
   status?: boolean;
   createdAt?: Date;
   updatedAt?: Date;
+  participantsCount?: number;
   participants?: CampaignParticipantDTO[];
+  leaderBoard?: CampaignLeaderBoardDTO;
 }
 
 export interface CampaignParticipantDTO {
@@ -27,6 +29,7 @@ export interface CampaignParticipantDTO {
   user?: {
     userId: string;
     web3UserName: string;
+    profilePicture?: string; // Added this for the profile picture
   };
 }
 

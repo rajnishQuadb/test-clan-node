@@ -9,6 +9,8 @@ router.post('/create', campaignController_1.Create_Campaign);
 router.post('/join', campaignController_1.Join_Campaign);
 // Route to get all campaigns
 router.get('/fetch/all', campaignController_1.Get_All_Campaigns);
+// Route to get campaigns joined by a user
+router.get('/fetch/user-joined', campaignController_1.Get_User_Joined_Campaigns);
 // Route to get filtered campaigns
 router.post('/fetch/filter', campaignController_1.Get_Filtered_Campaigns);
 // Route to get a single campaign by ID
