@@ -20,10 +20,16 @@ exports.Create_User = (0, error_handler_1.catchAsync)(async (req, res, next) => 
             userId: user.userId,
             web3UserName: user.web3UserName,
             DiD: user.DiD,
-            isActiveUser: user.isActiveUser,
+            twitterAccessToken: user.twitterAccessToken,
+            twitterRefreshToken: user.twitterRefreshToken,
             isEarlyUser: user.isEarlyUser,
+            isActiveUser: user.isActiveUser,
             activeClanId: user.activeClanId,
-            createdAt: user.createdAt,
+            clanJoinDate: user.clanJoinDate,
+            referralCode: user.referralCode,
+            socialHandles: user.socialHandles,
+            wallets: user.wallets,
+            rewardHistory: user.rewardHistory,
         },
     };
     // Encrypt if needed

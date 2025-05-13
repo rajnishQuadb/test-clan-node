@@ -29,26 +29,33 @@ exports.discordCallback = (0, error_handler_1.catchAsync)(async (req, res, next)
     const response = await axios_1.default.post("https://discord.com/api/oauth2/token", params, { headers });
     const accessToken = response.data
         .access_token;
-    console.log("Access Token:", accessToken);
     const userResponse = await axios_1.default.get("https://discord.com/api/users/@me", {
         headers: {
             Authorization: `Bearer ${accessToken}`,
             "Content-Type": "application/x-www-form-urlencoded",
         },
     });
-    const userData = {
-        success: true,
-        user: {
-            id: userResponse.data.id,
-            name: userResponse.data.global_name,
-            email: userResponse.data.email,
-            picture: userResponse.data.avatar,
-        },
-    };
+    // const userData = {
+    //   provider: "discord",
+    //   id: userResponse.data.id,
+    //   name: userResponse.data.global_name,
+    //   email: userResponse.data.email,
+    //   picture: userResponse.data.avatar,
+    // };
+    const linkParams = new URLSearchParams({
+        provider: 'discord',
+        socialId: userResponse.data.id,
+        email: userResponse.data.email,
+        displayName: userResponse.data.global_name,
+        profilePicture: userResponse.data.avatar,
+    });
+    const deepLinkUrl = `${process.env.APP_SCHEMA_LINK}?${linkParams.toString()}`;
     const user = userResponse.data;
     // Create deep link URL for the mobile app
-    const deepLinkData = encodeURIComponent(JSON.stringify(userData));
-    const deepLinkUrl = `${process.env.APP_SCHEMA_LINK}?data=${deepLinkData}`;
+    // const deepLinkData = encodeURIComponent(JSON.stringify(userData));
+    // const deepLinkUrl = `${process.env.APP_SCHEMA_LINK}?data=${deepLinkData}`;
+    // com.app.clans://Screens/UserNameScreen?
+    // const deepLinkUrl = `${process.env.APP_SCHEMA_LINK}?provider=${userData.provider}&socialId=${userData.id}&email=${userData.email}&displayName=${userData.name}&profilePicture=${userData.picture}`;
     // Render an HTML page with user details and a button to return to the app
     const html = `
   <!DOCTYPE html>

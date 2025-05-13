@@ -42,10 +42,28 @@ const app = (0, express_1.default)();
 app.use(express_1.default.json());
 app.use(express_1.default.urlencoded({ extended: false }));
 app.use((0, cookie_parser_1.default)());
+// app.use(cors({
+//   origin: "*",
+//   credentials: true,
+//   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+//   allowedHeaders: ['Content-Type', 'Authorization', 'x-user-role']
+// }));
+const allowedOrigins = [
+    'https://clans.10on10studios.com',
+    'https://clans-landing.10on10studios.com',
+    'http://localhost:3000'
+];
 app.use((0, cors_1.default)({
-    origin: process.env.NODE_ENV === 'production'
-        ? 'https://clans.10on10studios.com'
-        : 'http://localhost:3000',
+    origin: (origin, callback) => {
+        if (!origin)
+            return callback(null, true);
+        if (allowedOrigins.includes(origin)) {
+            return callback(null, true);
+        }
+        else {
+            return callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'x-user-role']

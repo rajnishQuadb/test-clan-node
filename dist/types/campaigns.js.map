@@ -1,1 +1,1 @@
-{"version":3,"file":"campaigns.js","sourceRoot":"","sources":["../../types/campaigns.ts"],"names":[],"mappings":";AAAA,kCAAkC;;;AAmDlC,0BAA0B;AAC1B,IAAY,cAKX;AALD,WAAY,cAAc;IACxB,mCAAiB,CAAA;IACjB,uCAAqB,CAAA;IACrB,+BAAa,CAAA;IACb,6BAAW,CAAA;AACb,CAAC,EALW,cAAc,8BAAd,cAAc,QAKzB"}
+{"version":3,"file":"campaigns.js","sourceRoot":"","sources":["../../types/campaigns.ts"],"names":[],"mappings":";AAAA,kCAAkC;;;AAsDlC,0BAA0B;AAC1B,IAAY,cAKX;AALD,WAAY,cAAc;IACxB,mCAAiB,CAAA;IACjB,uCAAqB,CAAA;IACrB,+BAAa,CAAA;IACb,6BAAW,CAAA;AACb,CAAC,EALW,cAAc,8BAAd,cAAc,QAKzB"}
