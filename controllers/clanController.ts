@@ -219,6 +219,9 @@ export const Join_Clan = catchAsync(async (req: Request, res: Response, next: Ne
   try {
     const { userId, clanId } = req.body;
 
+    console.log("Clans ID : ",clanId);
+    console.log("User ID : ",userId);
+
     // Validate required parameters
     if (!userId) {
       return next(new AppError('User ID is required.', HTTP_STATUS.BAD_REQUEST));
